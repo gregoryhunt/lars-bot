@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: lars
+      POSTGRES_PASSWORD: lars
+      POSTGRES_DB: lars
+    ports:
+      - "5432:5432"
+    volumes:
+      - lars_pgdata:/var/lib/postgresql/data
+
+volumes:
+  lars_pgdata:

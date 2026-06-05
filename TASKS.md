@@ -4,12 +4,12 @@ Sequential, test-backed checklist grouped by milestone (see `MVP_PLAN.md`).
 Keep tasks small; each should land as a vertical slice with tests + doc updates.
 
 ## M0 — Scaffolding & config
-- [ ] Initialize uv project + `pyproject.toml` (Python 3.11+), package `lars`.
-- [ ] Add Ruff + ty config; add `pytest` with one trivial passing test.
-- [ ] Add `docker-compose.yml` with a Postgres service.
-- [ ] Add `.env.example` with all env vars from the README.
-- [ ] `config/settings.py`: typed settings (Pydantic) loaded + validated from env.
-- [ ] Test: settings load with valid env; fail clearly on missing required vars.
+- [x] Initialize uv project + `pyproject.toml` (Python 3.11+), package `lars`.
+- [x] Add Ruff + ty config; add `pytest` with one trivial passing test.
+- [x] Add `docker-compose.yml` with a Postgres service.
+- [x] Add `.env.example` with all env vars from the README.
+- [x] `config/settings.py`: typed settings (Pydantic) loaded + validated from env.
+- [x] Test: settings load with valid env; fail clearly on missing required vars.
 
 ## M1 — Domain models & persistence foundation
 - [ ] Pydantic domain models + enums (see `docs/data-model.md`).

@@ -4,10 +4,10 @@ A personal-coach Telegram bot for a small, fixed group of users that tracks
 workouts, body weight, and nutrition, and generates each user's next workout the
 night before a scheduled training day.
 
-> **Status: Phase 1 — planning/spec.** No application code exists yet. This repo
-> currently holds the design artifacts (`MVP_PLAN.md`, `TASKS.md`, and `docs/`).
-> Sections below describing setup and commands document the *intended* MVP and
-> are marked as not-yet-implemented where relevant.
+> **Status: building — M0 (scaffolding & config) complete.** The repo holds the
+> design artifacts (`MVP_PLAN.md`, `TASKS.md`, `docs/`) plus the project skeleton:
+> uv project, typed settings, Docker Compose Postgres, lint/type/test setup.
+> Setup steps and commands below are marked where not yet implemented.
 
 ## What Lars does
 
@@ -92,24 +92,26 @@ in-memory JobQueue on startup**. See [`docs/architecture.md`](docs/architecture.
 - **Postgres** + **Alembic** migrations.
 - **pytest** for tests; Docker Compose for local Postgres.
 
-## Local setup (planned — not yet implemented)
+## Local setup
 
 ```bash
-# 1. Install deps
+# 1. Install deps (works today)
 uv sync
 
-# 2. Start Postgres
+# 2. Start Postgres (works today)
 docker compose up -d db
 
-# 3. Configure environment
+# 3. Configure environment (works today)
 cp .env.example .env   # then fill in the values below
 
-# 4. Run migrations
+# 4. Run migrations (not yet — added in M1)
 uv run alembic upgrade head
 
-# 5. Run the bot
+# 5. Run the bot (not yet — added in M2)
 uv run lars
 ```
+
+Checks (works today): `uv run ruff check .`, `uv run ty check`, `uv run pytest`.
 
 ## Environment variables
 
