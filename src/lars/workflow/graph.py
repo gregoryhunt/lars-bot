@@ -12,8 +12,10 @@ from lars.workflow.nodes import (
     route_after_classify,
     route_after_confirm,
     route_after_context,
+    route_after_screenshot_confirm,
 )
 from lars.workflow.onboarding import OnboardingPersister
+from lars.workflow.screenshots import ScreenshotPersister
 from lars.workflow.state import GraphState
 
 
@@ -24,6 +26,7 @@ def build_graph(
     context_loader: ContextLoader | None = None,
     *,
     onboarding_persister: OnboardingPersister | None = None,
+    screenshot_persister: ScreenshotPersister | None = None,
 ) -> Any:
     """Build and compile the workflow graph with the given dependencies."""
     nodes = WorkflowNodes(
@@ -31,6 +34,7 @@ def build_graph(
         registry,
         context_loader or StubContextLoader(),
         onboarding_persister,
+        screenshot_persister,
     )
 
     graph = StateGraph(GraphState)  # ty: ignore[invalid-argument-type]  # TypedDict bound not recognized
@@ -39,6 +43,8 @@ def build_graph(
     graph.add_node("onboarding", nodes.onboarding)
     graph.add_node("classify", nodes.classify)
     graph.add_node("confirm_write", nodes.confirm_write)
+    graph.add_node("confirm_screenshot", nodes.confirm_screenshot)
+    graph.add_node("persist_screenshot", nodes.persist_screenshot)
     graph.add_node("persist", nodes.persist)
     graph.add_node("respond", nodes.respond)
 
@@ -47,7 +53,11 @@ def build_graph(
     graph.add_conditional_edges(
         "load_context",
         route_after_context,
-        {"onboarding": "onboarding", "classify": "classify"},
+        {
+            "onboarding": "onboarding",
+            "confirm_screenshot": "confirm_screenshot",
+            "classify": "classify",
+        },
     )
     graph.add_conditional_edges(
         "classify",
@@ -57,7 +67,13 @@ def build_graph(
     graph.add_conditional_edges(
         "confirm_write", route_after_confirm, {"persist": "persist", "respond": "respond"}
     )
+    graph.add_conditional_edges(
+        "confirm_screenshot",
+        route_after_screenshot_confirm,
+        {"persist_screenshot": "persist_screenshot", "respond": "respond"},
+    )
     graph.add_edge("onboarding", END)
+    graph.add_edge("persist_screenshot", END)
     graph.add_edge("persist", "respond")
     graph.add_edge("respond", END)
 

@@ -5,6 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (M5 — screenshot ingestion)
+- Vision ingestion for Apple Fitness workout summaries and smart-scale readings:
+  photo → `ScreenshotExtractor` (Claude vision) → `ScreenshotExtraction`
+  (kind, confidence, summary, screenshot date, canonical fields).
+- A clarity gate: low-confidence/unclear screenshots ask for a clearer photo
+  instead of guessing.
+- Screenshot path in the graph: confirm the parsed summary, then persist a
+  `body_metrics` or `workout_completion` record (with raw extraction stored),
+  using the date read from the screenshot. Workouts reconcile to a planned
+  session on that date and mark it completed.
+- Photo handler downloads the image and runs extract → confirm → persist;
+  `DbScreenshotPersister` and a `ScreenshotExtractor` are wired in at startup.
+- Tests: extraction parsing, the clarity gate, confirm/reject/persist flow
+  (in-memory), and Postgres integration (body-metric date; workout reconciliation).
+
+### Changed
+- `intake` now reads each turn's input from an `incoming` payload (text or
+  screenshot), so the graph handles photos as well as text without state bleed.
+
 ### Added (M4 — onboarding & live workflow)
 - Guided multi-turn onboarding: a new user (no DB row) is routed into an
   onboarding node that asks profile/goal/schedule/timezone/unit questions via

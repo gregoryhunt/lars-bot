@@ -5,9 +5,38 @@ This module holds the structured payloads that need their own schema — current
 the workout prescription that is persisted as ``generated_workouts.prescription``.
 """
 
+from datetime import datetime
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from lars.domain.enums import ExperienceLevel, GoalType
+
+
+class ScreenshotExtraction(BaseModel):
+    """What the vision model read from an Apple Fitness or smart-scale screenshot.
+
+    The model classifies the screenshot, gives a confidence, a human-readable
+    summary (in the original units), the date/time shown, and the structured
+    fields in canonical units (kg).
+    """
+
+    kind: Literal["workout", "body_metrics", "unknown"] = "unknown"
+    confidence: float = 0.0
+    summary: str = ""
+    performed_at: datetime | None = None  # the date/time shown on the screenshot
+
+    # Workout (Apple Fitness summary)
+    workout_type: str | None = None
+    duration_min: float | None = None
+    active_calories: float | None = None
+    avg_hr: float | None = None
+
+    # Body metrics (smart scale), canonical units
+    weight_kg: float | None = None
+    body_fat_pct: float | None = None
+    lean_mass_kg: float | None = None
+    bmi: float | None = None
 
 
 class OnboardingResult(BaseModel):

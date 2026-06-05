@@ -10,13 +10,16 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from lars.adapters.llm import Image
 from lars.config import Settings
+from lars.services.screenshots import process_photo
 from lars.workflow import run_turn
 
 logger = logging.getLogger(__name__)
 
 SETTINGS_KEY = "settings"
 GRAPH_KEY = "graph"
+EXTRACTOR_KEY = "screenshot_extractor"
 
 DECLINE_MESSAGE = (
     "Hi! I'm Lars, a private coaching bot, and I don't recognize this account, "
@@ -65,8 +68,21 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if not is_allowed(update, context):
         await _decline(update)
         return
-    if update.effective_message is not None:
-        await update.effective_message.reply_text(PHOTO_ACK)
+    message = update.effective_message
+    user = update.effective_user
+    if message is None or user is None or not message.photo:
+        return
+    graph = context.bot_data.get(GRAPH_KEY)
+    extractor = context.bot_data.get(EXTRACTOR_KEY)
+    if graph is None or extractor is None:
+        await message.reply_text(PHOTO_ACK)
+        return
+    photo_file = await message.photo[-1].get_file()
+    data = await photo_file.download_as_bytearray()
+    image = Image(bytes(data), "image/jpeg")
+    config = {"configurable": {"thread_id": str(user.id)}}
+    reply = await process_photo(extractor, graph, config, telegram_id=user.id, image=image)
+    await message.reply_text(reply)
 
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

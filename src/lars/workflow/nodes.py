@@ -10,6 +10,7 @@ from langgraph.types import interrupt
 
 from lars.adapters.llm import ModelAdapter
 from lars.domain.enums import Intent
+from lars.domain.models import ScreenshotExtraction
 from lars.prompts import PromptRegistry
 from lars.workflow.context import ContextLoader
 from lars.workflow.onboarding import (
@@ -17,6 +18,7 @@ from lars.workflow.onboarding import (
     format_answers,
     parse_onboarding_json,
 )
+from lars.workflow.screenshots import ScreenshotPersister
 from lars.workflow.state import GraphState
 
 # Intents whose writes must be confirmed before persisting.
@@ -80,16 +82,27 @@ class WorkflowNodes:
         registry: PromptRegistry,
         context_loader: ContextLoader,
         onboarding_persister: OnboardingPersister | None = None,
+        screenshot_persister: ScreenshotPersister | None = None,
     ) -> None:
         self._adapter = adapter
         self._registry = registry
         self._context = context_loader
         self._persister = onboarding_persister
+        self._screenshot_persister = screenshot_persister
 
     async def intake(self, state: GraphState) -> GraphState:
-        # Reset transient keys so values can't bleed across turns on a reused thread.
+        # Read this turn's input from `incoming` (fresh turn) and reset transient
+        # keys so values can't bleed across turns on a reused thread.
+        incoming = state.get("incoming")
+        if incoming is not None:
+            text = (incoming.get("text") or "").strip()
+            screenshot = incoming.get("screenshot")
+        else:
+            text = state.get("text", "").strip()
+            screenshot = state.get("screenshot")
         return {
-            "text": state.get("text", "").strip(),
+            "text": text,
+            "screenshot": screenshot,
             "intent": "",
             "is_new_user": False,
             "confirmed": None,
@@ -136,6 +149,20 @@ class WorkflowNodes:
         decision = interrupt({"message": "Just to confirm — should I go ahead? (yes/no)"})
         return {"confirmed": _is_affirmative(decision)}
 
+    async def confirm_screenshot(self, state: GraphState) -> GraphState:
+        shot = state.get("screenshot") or {}
+        summary = shot.get("summary") or "that screenshot"
+        decision = interrupt({"message": f"Got it — {summary}. Want me to save it? (yes/no)"})
+        return {"confirmed": _is_affirmative(decision)}
+
+    async def persist_screenshot(self, state: GraphState) -> GraphState:
+        if self._screenshot_persister is None:
+            raise RuntimeError("screenshot persistence requires a screenshot_persister")
+        extraction = ScreenshotExtraction.model_validate(state["screenshot"])
+        await self._screenshot_persister(state["telegram_id"], extraction)
+        message = f"Saved ✅ {extraction.summary}".rstrip()
+        return {"persisted": True, "response": message}
+
     async def persist(self, state: GraphState) -> GraphState:
         # Placeholder write; real persistence lands in later milestones.
         return {"persisted": True}
@@ -151,7 +178,15 @@ class WorkflowNodes:
 
 
 def route_after_context(state: GraphState) -> str:
-    return "onboarding" if state.get("is_new_user") else "classify"
+    if state.get("is_new_user"):
+        return "onboarding"
+    if state.get("screenshot"):
+        return "confirm_screenshot"
+    return "classify"
+
+
+def route_after_screenshot_confirm(state: GraphState) -> str:
+    return "persist_screenshot" if state.get("confirmed") else "respond"
 
 
 def route_after_classify(state: GraphState) -> str:

@@ -45,13 +45,13 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
       partial onboarding resumes from checkpoint.
 
 ## M5 — Screenshot ingestion (weight + workouts)
-- [ ] Photo download + pass to vision adapter.
-- [ ] Vision extraction → structured fields for (a) Apple Fitness workout,
+- [x] Photo download + pass to vision adapter.
+- [x] Vision extraction → structured fields for (a) Apple Fitness workout,
       (b) smart-scale body metrics.
-- [ ] Date extracted from image; reconcile to the correct date/planned session.
-- [ ] Confirm parsed values via message before persisting.
-- [ ] Persist workout_completion / body_metrics with raw extraction stored.
-- [ ] Test: fixture screenshots (mock vision) → records created with screenshot
+- [x] Date extracted from image; reconcile to the correct date/planned session.
+- [x] Confirm parsed values via message before persisting.
+- [x] Persist workout_completion / body_metrics with raw extraction stored.
+- [x] Test: fixture screenshots (mock vision) → records created with screenshot
       date after confirmation; low-confidence parse asks rather than guesses.
 
 ## M6 — Scheduling: nightly generation + skip checks

@@ -60,6 +60,8 @@ async def test_non_allowlisted_text_is_declined() -> None:
 
 async def test_allowlisted_photo_is_acknowledged() -> None:
     update, reply = make_update(ALLOWED_ID)
+    # A photo message with no graph/extractor wired falls back to the placeholder ack.
+    update.effective_message.photo = [object()]  # ty: ignore[invalid-assignment]
     await handle_photo(update, make_context({ALLOWED_ID}))
     reply.assert_awaited_once_with(PHOTO_ACK)
 

@@ -12,7 +12,9 @@ from lars.logging_config import setup_logging
 from lars.persistence import create_engine, create_sessionmaker
 from lars.prompts import PromptRegistry
 from lars.services.onboarding import DbOnboardingPersister
+from lars.services.screenshots import DbScreenshotPersister, ScreenshotExtractor
 from lars.telegram.handlers import (
+    EXTRACTOR_KEY,
     GRAPH_KEY,
     SETTINGS_KEY,
     handle_callback,
@@ -39,14 +41,17 @@ async def _post_init(app: Application) -> None:
     await saver.setup()
 
     adapter = AnthropicAdapter(settings.anthropic_api_key, settings.anthropic_model)
+    registry = PromptRegistry()
     graph = build_graph(
         adapter,
-        PromptRegistry(),
+        registry,
         saver,
         DbContextLoader(sessionmaker),
         onboarding_persister=DbOnboardingPersister(sessionmaker),
+        screenshot_persister=DbScreenshotPersister(sessionmaker),
     )
     app.bot_data[GRAPH_KEY] = graph
+    app.bot_data[EXTRACTOR_KEY] = ScreenshotExtractor(adapter, registry)
     app.bot_data[_SAVER_CM_KEY] = saver_cm
     app.bot_data[_ENGINE_KEY] = engine
     logger.info("workflow graph ready")
