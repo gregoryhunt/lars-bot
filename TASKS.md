@@ -55,13 +55,14 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
       date after confirmation; low-confidence parse asks rather than guesses.
 
 ## M6 — Scheduling: nightly generation + skip checks
-- [ ] Job store table + repository; rehydrate JobQueue from Postgres on startup.
-- [ ] Per-user nightly generation job at user-local time; duplicate prevention.
-- [ ] One planned session per scheduled training day (unique constraint).
-- [ ] Skip-check job: flag an unlogged training day past grace period.
-- [ ] Injected clock abstraction for tests.
-- [ ] Test: night-before job creates exactly one session/prescription; restart
+- [x] Job store table + repository; rehydrate JobQueue from Postgres on startup.
+- [x] Per-user nightly generation job at user-local time; duplicate prevention.
+- [x] One planned session per scheduled training day (unique constraint).
+- [x] Skip-check job: flag an unlogged training day past grace period.
+- [x] Injected clock abstraction for tests.
+- [x] Test: night-before job creates exactly one session/prescription; restart
       rehydrates jobs; skip check flags unlogged day; no duplicate jobs.
+      (Prescription generation itself is M7; M6 creates the planned session.)
 
 ## M7 — Workout generation workflow
 - [ ] Generation node: build context (schedule, history, skips, pulse feedback) →

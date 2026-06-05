@@ -12,6 +12,7 @@ from telegram.ext import ContextTypes
 
 from lars.adapters.llm import Image
 from lars.config import Settings
+from lars.scheduler.jobs import ensure_user_jobs
 from lars.services.screenshots import process_photo
 from lars.workflow import run_turn
 
@@ -62,6 +63,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     config = {"configurable": {"thread_id": str(user.id)}}
     reply = await run_turn(graph, config, telegram_id=user.id, text=message.text or "")
     await message.reply_text(reply)
+    # A user who just finished onboarding becomes active; register their jobs.
+    await ensure_user_jobs(context.application, user.id)
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

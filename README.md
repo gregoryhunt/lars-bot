@@ -4,13 +4,12 @@ A personal-coach Telegram bot for a small, fixed group of users that tracks
 workouts, body weight, and nutrition, and generates each user's next workout the
 night before a scheduled training day.
 
-> **Status: building — M5 (screenshot ingestion) complete.** The bot onboards new
-> users and ingests **screenshots**: send an Apple Fitness summary or a smart-scale
-> photo and Lars reads it with vision, confirms the parsed values, and logs a
-> workout or body-metric record dated from the screenshot (workouts reconcile to
-> the planned session). Built on the persistence layer, Telegram interface, and the
-> LangGraph workflow (Claude adapter, prompt registry, Postgres checkpointer,
-> confirm-before-write). Scheduling and workout generation are next.
+> **Status: building — M6 (scheduling) complete.** Lars onboards users, ingests
+> screenshots (vision → confirm → log), and is now **proactive**: per-user nightly
+> jobs plan the next training day and a skip-check flags unlogged sessions, all on
+> each user's local time, persisted to Postgres and rehydrated into the JobQueue on
+> startup. Built on the persistence layer, Telegram interface, and the LangGraph
+> workflow. Next: workout generation (turning a planned session into a prescription).
 
 ## What Lars does
 

@@ -1,0 +1,104 @@
+"""JobQueue registration and rehydration.
+
+The scheduled_jobs table is the source of truth; the in-memory JobQueue is a
+runtime cache rebuilt from it on startup (and lazily when a user first acts).
+"""
+
+import logging
+import uuid
+from collections.abc import Sequence
+from datetime import time
+from typing import Any, cast
+from zoneinfo import ZoneInfo
+
+from telegram.ext import Application, ContextTypes
+
+from lars.domain.enums import JobType
+from lars.persistence.repositories import JobWithUser, ScheduledJobRepository
+
+logger = logging.getLogger(__name__)
+
+SCHEDULER_KEY = "scheduler"
+SESSIONMAKER_KEY = "sessionmaker"
+
+_DEFAULT_TIME = time(20, 0)
+
+
+def _job_name(prefix: str, telegram_id: int) -> str:
+    return f"{prefix}:{telegram_id}"
+
+
+def _job_data(context: ContextTypes.DEFAULT_TYPE) -> dict[str, Any] | None:
+    if context.job is None or context.job.data is None:
+        return None
+    return cast(dict[str, Any], context.job.data)
+
+
+async def _nightly_job(context: ContextTypes.DEFAULT_TYPE) -> None:
+    service = context.application.bot_data[SCHEDULER_KEY]
+    data = _job_data(context)
+    if data is None:
+        return
+    await service.generate_for_tomorrow(uuid.UUID(data["user_id"]))
+    # M7 will generate the prescription and send it to data["telegram_id"].
+
+
+async def _skip_check_job(context: ContextTypes.DEFAULT_TYPE) -> None:
+    service = context.application.bot_data[SCHEDULER_KEY]
+    data = _job_data(context)
+    if data is None:
+        return
+    flagged = await service.run_skip_check(uuid.UUID(data["user_id"]))
+    for planned in flagged:
+        await context.bot.send_message(
+            chat_id=data["telegram_id"],
+            text=(
+                f"Looks like your {planned.split_label} workout didn't get logged. "
+                "Everything OK, or did you skip it?"
+            ),
+        )
+
+
+_CALLBACKS = {
+    JobType.NIGHTLY_GENERATION: ("nightly", _nightly_job),
+    JobType.SKIP_CHECK: ("skip", _skip_check_job),
+}
+
+
+def register_jobs(job_queue: Any, entries: Sequence[JobWithUser]) -> None:
+    """(Re)register run_daily jobs for the given store rows, deduping by name."""
+    for job, telegram_id, timezone in entries:
+        callback = _CALLBACKS.get(job.job_type)
+        if callback is None:
+            continue
+        prefix, fn = callback
+        name = _job_name(prefix, telegram_id)
+        for existing in job_queue.get_jobs_by_name(name):
+            existing.schedule_removal()
+        run_at = (job.run_local_time or _DEFAULT_TIME).replace(tzinfo=ZoneInfo(timezone))
+        job_queue.run_daily(
+            fn,
+            time=run_at,
+            name=name,
+            data={"user_id": str(job.user_id), "telegram_id": telegram_id},
+        )
+
+
+async def rehydrate_jobs(app: Application) -> None:
+    sessionmaker = app.bot_data[SESSIONMAKER_KEY]
+    async with sessionmaker() as session:
+        entries = await ScheduledJobRepository(session).list_active()
+    if app.job_queue is not None:
+        register_jobs(app.job_queue, entries)
+    logger.info("rehydrated %d scheduled jobs", len(entries))
+
+
+async def ensure_user_jobs(app: Application, telegram_id: int) -> None:
+    """Register a user's jobs into the live JobQueue if not already present."""
+    job_queue = app.job_queue
+    if job_queue is None or job_queue.get_jobs_by_name(_job_name("nightly", telegram_id)):
+        return
+    sessionmaker = app.bot_data[SESSIONMAKER_KEY]
+    async with sessionmaker() as session:
+        entries = await ScheduledJobRepository(session).list_for_telegram_id(telegram_id)
+    register_jobs(job_queue, entries)

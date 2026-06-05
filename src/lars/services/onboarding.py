@@ -4,10 +4,12 @@ from datetime import UTC, datetime, time
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from lars.domain.enums import UserStatus
+from lars.domain.enums import JobType, UserStatus
 from lars.domain.models import OnboardingResult
 from lars.persistence.models import Event, Goal, Profile, User, WorkoutSchedule
-from lars.persistence.repositories import UserRepository
+from lars.persistence.repositories import ScheduledJobRepository, UserRepository
+
+_SKIP_CHECK_TIME = time(21, 0)
 
 
 def _parse_hhmm(value: str) -> time:
@@ -28,6 +30,7 @@ class DbOnboardingPersister:
                 user = User(telegram_id=telegram_id)
                 session.add(user)
 
+            generation_time = _parse_hhmm(result.generation_local_time)
             user.display_name = result.display_name
             user.timezone = result.timezone
             user.unit_system = result.unit_system
@@ -49,12 +52,17 @@ class DbOnboardingPersister:
             user.schedules = [
                 WorkoutSchedule(
                     definition=result.schedule,
-                    generation_local_time=_parse_hhmm(result.generation_local_time),
+                    generation_local_time=generation_time,
                     effective_from=datetime.now(UTC).date(),
                     is_active=True,
                 )
             ]
             await session.flush()
+
+            jobs = ScheduledJobRepository(session)
+            await jobs.ensure(user.id, JobType.NIGHTLY_GENERATION, generation_time)
+            await jobs.ensure(user.id, JobType.SKIP_CHECK, _SKIP_CHECK_TIME)
+
             session.add(
                 Event(
                     user_id=user.id,

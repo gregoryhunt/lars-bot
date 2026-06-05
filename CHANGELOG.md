@@ -5,6 +5,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (M6 — scheduling: nightly generation & skip checks)
+- `Clock` abstraction (`SystemClock`) so time-dependent logic is testable.
+- `SchedulingService`: `generate_for_tomorrow` ensures exactly one planned session
+  for the user's next training day (idempotent, per-user timezone), and
+  `run_skip_check` marks unlogged training days past their grace period as missed.
+- `ScheduledJobRepository` (durable job store) with idempotent `ensure`; onboarding
+  now creates the user's `nightly_generation` and `skip_check` rows.
+- JobQueue wiring (`scheduler/jobs.py`): per-user `run_daily` jobs registered by
+  name (dedup on re-register), rehydrated from Postgres at startup, and lazily
+  registered for a user after their first message; the skip-check job messages the
+  user about unlogged sessions.
+- Tests: nightly creates exactly one session (idempotent) and skips rest days,
+  skip-check flags/respects grace, job-store `ensure` idempotency, and
+  registration dedup.
+
 ### Added (M5 — screenshot ingestion)
 - Vision ingestion for Apple Fitness workout summaries and smart-scale readings:
   photo → `ScreenshotExtractor` (Claude vision) → `ScreenshotExtraction`
