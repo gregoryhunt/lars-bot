@@ -1,24 +1,75 @@
 """Telegram application bootstrap."""
 
 import logging
+from typing import Any
 
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from telegram.ext import Application, CallbackQueryHandler, MessageHandler, filters
 
+from lars.adapters.llm.anthropic import AnthropicAdapter
 from lars.config import Settings, get_settings
 from lars.logging_config import setup_logging
+from lars.persistence import create_engine, create_sessionmaker
+from lars.prompts import PromptRegistry
+from lars.services.onboarding import DbOnboardingPersister
 from lars.telegram.handlers import (
+    GRAPH_KEY,
     SETTINGS_KEY,
     handle_callback,
     handle_photo,
     handle_text,
 )
+from lars.workflow import DbContextLoader, build_graph
+from lars.workflow.checkpointer import to_libpq_url
 
 logger = logging.getLogger(__name__)
+
+_SAVER_CM_KEY = "_saver_cm"
+_ENGINE_KEY = "_engine"
+
+
+async def _post_init(app: Application) -> None:
+    """Open the Postgres checkpointer and build the graph once the loop is running."""
+    settings: Settings = app.bot_data[SETTINGS_KEY]
+    engine = create_engine(settings.database_url)
+    sessionmaker = create_sessionmaker(engine)
+
+    saver_cm = AsyncPostgresSaver.from_conn_string(to_libpq_url(settings.database_url))
+    saver = await saver_cm.__aenter__()
+    await saver.setup()
+
+    adapter = AnthropicAdapter(settings.anthropic_api_key, settings.anthropic_model)
+    graph = build_graph(
+        adapter,
+        PromptRegistry(),
+        saver,
+        DbContextLoader(sessionmaker),
+        onboarding_persister=DbOnboardingPersister(sessionmaker),
+    )
+    app.bot_data[GRAPH_KEY] = graph
+    app.bot_data[_SAVER_CM_KEY] = saver_cm
+    app.bot_data[_ENGINE_KEY] = engine
+    logger.info("workflow graph ready")
+
+
+async def _post_shutdown(app: Application) -> None:
+    saver_cm: Any = app.bot_data.get(_SAVER_CM_KEY)
+    if saver_cm is not None:
+        await saver_cm.__aexit__(None, None, None)
+    engine = app.bot_data.get(_ENGINE_KEY)
+    if engine is not None:
+        await engine.dispose()
 
 
 def build_application(settings: Settings) -> Application:
     """Build the python-telegram-bot Application with handlers registered."""
-    app = Application.builder().token(settings.telegram_bot_token).build()
+    app = (
+        Application.builder()
+        .token(settings.telegram_bot_token)
+        .post_init(_post_init)
+        .post_shutdown(_post_shutdown)
+        .build()
+    )
     app.bot_data[SETTINGS_KEY] = settings
 
     # Photos first (more specific), then any text (including /commands), then taps.

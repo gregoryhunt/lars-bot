@@ -34,15 +34,14 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
 - [x] Confirm-before-write gate for important writes.
 - [x] Test: intents route correctly (mock adapter); checkpoint persists/resumes;
       important write blocked until confirmation.
-- [ ] (Deferred to M4) Wire the graph into the live Telegram handlers, replacing
-      M2's placeholder replies, once onboarding gives it real behavior.
+- [x] Wire the graph into the live Telegram handlers (done in M4).
 
 ## M4 — Onboarding
-- [ ] First-message detection (no user row → onboarding).
-- [ ] Onboarding prompt (markdown) + multi-turn flow capturing profile/goals/
+- [x] First-message detection (no user row → onboarding).
+- [x] Onboarding prompt (markdown) + multi-turn flow capturing profile/goals/
       schedule/timezone/units.
-- [ ] Persist profile, goals, schedule, timezone, units.
-- [ ] Test: fresh user completes onboarding (mock LLM); re-message doesn't re-onboard;
+- [x] Persist profile, goals, schedule, timezone, units.
+- [x] Test: fresh user completes onboarding (mock LLM); re-message doesn't re-onboard;
       partial onboarding resumes from checkpoint.
 
 ## M5 — Screenshot ingestion (weight + workouts)

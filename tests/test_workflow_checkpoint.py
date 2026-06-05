@@ -25,7 +25,7 @@ async def test_checkpoint_persists_across_instances(migrated_db: str) -> None:
         graph = build_graph(MockModelAdapter(["log_weight"]), PromptRegistry(), saver)
         first = await graph.ainvoke({"telegram_id": 1, "text": "weighed 181"}, config)
         assert "__interrupt__" in first
-        assert "persisted" not in first
+        assert not first.get("persisted")
 
     # Second "process": a fresh saver + graph resumes from the persisted checkpoint.
     async with postgres_checkpointer(migrated_db) as saver:

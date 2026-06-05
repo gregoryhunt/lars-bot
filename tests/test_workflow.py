@@ -7,9 +7,8 @@ from langgraph.types import Command
 
 from lars.adapters.llm import MockModelAdapter
 from lars.prompts import PromptRegistry
-from lars.workflow import build_graph
+from lars.workflow import build_graph, run_turn
 from lars.workflow.context import StubContextLoader
-from lars.workflow.nodes import ONBOARDING_GREETING
 
 
 def make_graph(
@@ -28,7 +27,7 @@ async def test_read_intent_routes_to_respond_without_persisting() -> None:
     graph, adapter = make_graph("view_plan")
     result = await graph.ainvoke({"telegram_id": 1, "text": "what's today?"}, cfg())
     assert result["intent"] == "view_plan"
-    assert "persisted" not in result
+    assert not result.get("persisted")
     assert "plan" in result["response"].lower()
     assert len(adapter.prompts) == 1  # classify ran once
 
@@ -40,10 +39,10 @@ async def test_trivial_write_persists_without_confirmation() -> None:
     assert result["persisted"] is True
 
 
-async def test_new_user_short_circuits_to_onboarding() -> None:
+async def test_new_user_routed_to_onboarding() -> None:
     graph, adapter = make_graph("view_plan", is_new=True)
-    result = await graph.ainvoke({"telegram_id": 1, "text": "hey"}, cfg())
-    assert result["response"] == ONBOARDING_GREETING
+    reply = await run_turn(graph, cfg(), telegram_id=1, text="hey")
+    assert "call you" in reply.lower()  # asks the first onboarding question
     assert adapter.prompts == []  # classify never ran
 
 
@@ -51,7 +50,7 @@ async def test_important_write_blocks_until_confirmation() -> None:
     graph, _ = make_graph("log_weight")
     first = await graph.ainvoke({"telegram_id": 1, "text": "weighed 181"}, cfg("w1"))
     assert "__interrupt__" in first
-    assert "persisted" not in first
+    assert not first.get("persisted")
 
     resumed = await graph.ainvoke(Command(resume="yes"), cfg("w1"))
     assert resumed["persisted"] is True

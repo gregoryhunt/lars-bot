@@ -5,6 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (M4 — onboarding & live workflow)
+- Guided multi-turn onboarding: a new user (no DB row) is routed into an
+  onboarding node that asks profile/goal/schedule/timezone/unit questions via
+  LangGraph `interrupt`, then a model call extracts a validated `OnboardingResult`
+  (`onboarding_extraction` prompt) and persists user + profile + goal + schedule.
+- `DbContextLoader` (first-message detection) and `DbOnboardingPersister`
+  (`services/onboarding.py`), plus an `onboarding_completed` audit event.
+- `run_turn` conversation runner that starts or resumes a graph turn and returns
+  the pending question/confirmation or final response.
+- The graph is now wired into the live Telegram text handler, with the Postgres
+  checkpointer and graph built at startup (`post_init`) and torn down on shutdown.
+- Tests: in-memory onboarding (collect → persist once, partial resume) and a
+  Postgres integration test (persists the user aggregate; re-messaging routes
+  normally instead of re-onboarding).
+
+### Changed
+- `intake` resets transient state each fresh turn so values can't bleed across
+  turns on a reused thread; `confirmed` is now tri-state (None / True / False).
+
 ### Added (M3 — LangGraph workflow & model adapter)
 - Model adapter Protocol (`generate`, `generate_with_images`) with an Anthropic
   (Claude, text + vision) implementation and a scripted `MockModelAdapter`.

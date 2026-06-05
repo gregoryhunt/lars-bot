@@ -13,6 +13,7 @@ from lars.workflow.nodes import (
     route_after_confirm,
     route_after_context,
 )
+from lars.workflow.onboarding import OnboardingPersister
 from lars.workflow.state import GraphState
 
 
@@ -21,13 +22,21 @@ def build_graph(
     registry: PromptRegistry,
     checkpointer: Any,
     context_loader: ContextLoader | None = None,
+    *,
+    onboarding_persister: OnboardingPersister | None = None,
 ) -> Any:
     """Build and compile the workflow graph with the given dependencies."""
-    nodes = WorkflowNodes(adapter, registry, context_loader or StubContextLoader())
+    nodes = WorkflowNodes(
+        adapter,
+        registry,
+        context_loader or StubContextLoader(),
+        onboarding_persister,
+    )
 
     graph = StateGraph(GraphState)  # ty: ignore[invalid-argument-type]  # TypedDict bound not recognized
     graph.add_node("intake", nodes.intake)
     graph.add_node("load_context", nodes.load_context)
+    graph.add_node("onboarding", nodes.onboarding)
     graph.add_node("classify", nodes.classify)
     graph.add_node("confirm_write", nodes.confirm_write)
     graph.add_node("persist", nodes.persist)
@@ -36,7 +45,9 @@ def build_graph(
     graph.add_edge(START, "intake")
     graph.add_edge("intake", "load_context")
     graph.add_conditional_edges(
-        "load_context", route_after_context, {"respond": "respond", "classify": "classify"}
+        "load_context",
+        route_after_context,
+        {"onboarding": "onboarding", "classify": "classify"},
     )
     graph.add_conditional_edges(
         "classify",
@@ -46,6 +57,7 @@ def build_graph(
     graph.add_conditional_edges(
         "confirm_write", route_after_confirm, {"persist": "persist", "respond": "respond"}
     )
+    graph.add_edge("onboarding", END)
     graph.add_edge("persist", "respond")
     graph.add_edge("respond", END)
 

@@ -11,7 +11,7 @@ class GraphState(TypedDict, total=False):
     # Derived during the run
     is_new_user: bool
     intent: str
-    confirmed: bool
+    confirmed: bool | None  # None = not applicable; False = explicitly rejected
     persisted: bool
 
     # Output

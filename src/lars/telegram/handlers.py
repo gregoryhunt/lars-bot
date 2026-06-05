@@ -11,10 +11,12 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from lars.config import Settings
+from lars.workflow import run_turn
 
 logger = logging.getLogger(__name__)
 
 SETTINGS_KEY = "settings"
+GRAPH_KEY = "graph"
 
 DECLINE_MESSAGE = (
     "Hi! I'm Lars, a private coaching bot, and I don't recognize this account, "
@@ -45,8 +47,18 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if not is_allowed(update, context):
         await _decline(update)
         return
-    if update.effective_message is not None:
-        await update.effective_message.reply_text(TEXT_ACK)
+    message = update.effective_message
+    user = update.effective_user
+    if message is None or user is None:
+        return
+    graph = context.bot_data.get(GRAPH_KEY)
+    if graph is None:
+        # Graph not wired (e.g. a minimal app); fall back to a placeholder ack.
+        await message.reply_text(TEXT_ACK)
+        return
+    config = {"configurable": {"thread_id": str(user.id)}}
+    reply = await run_turn(graph, config, telegram_id=user.id, text=message.text or "")
+    await message.reply_text(reply)
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

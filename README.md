@@ -4,12 +4,12 @@ A personal-coach Telegram bot for a small, fixed group of users that tracks
 workouts, body weight, and nutrition, and generates each user's next workout the
 night before a scheduled training day.
 
-> **Status: building — M3 (LangGraph workflow & model adapter) complete.** The repo
-> holds the design artifacts (`MVP_PLAN.md`, `TASKS.md`, `docs/`) plus a working
-> persistence layer, a Telegram bot skeleton, and the workflow engine: a model
-> adapter (Claude text + vision), prompt registry, intent-routing LangGraph with a
-> Postgres checkpointer and a confirm-before-write gate. The graph is built and
-> tested but not yet wired into the live handlers — that begins with onboarding (M4).
+> **Status: building — M4 (onboarding) complete.** The bot is now conversational
+> end-to-end: an allowlisted new user is guided through onboarding (profile, goals,
+> schedule, timezone, units) and persisted, then routed normally on later messages.
+> Built on a working persistence layer, the Telegram interface, and the LangGraph
+> workflow (Claude adapter, prompt registry, Postgres checkpointer, confirm-before-
+> write). Screenshot ingestion and workout generation are the next milestones.
 
 ## What Lars does
 
