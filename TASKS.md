@@ -74,10 +74,10 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
       (Wired into the nightly job, which now generates + sends the workout.)
 
 ## M8 — Pulse check + progression feedback
-- [ ] Post-completion hybrid survey (message + inline buttons): RPE, energy, soreness.
-- [ ] Optional free-text note; whole survey skippable; no nagging.
-- [ ] Persist pulse_check linked to completion; feed into next generation context.
-- [ ] Test: completion triggers skippable pulse check; responses persist; next
+- [x] Post-completion hybrid survey (message + inline buttons): RPE, energy, soreness.
+- [x] Optional free-text note; whole survey skippable; no nagging.
+- [x] Persist pulse_check linked to completion; feed into next generation context.
+- [x] Test: completion triggers skippable pulse check; responses persist; next
       generation receives pulse context.
 
 ## M9 — Nutrition logging

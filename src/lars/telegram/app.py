@@ -21,6 +21,7 @@ from lars.scheduler.jobs import (
 from lars.scheduler.service import SchedulingService
 from lars.services.generation import WorkoutGenerator
 from lars.services.onboarding import DbOnboardingPersister
+from lars.services.pulse import DbPulsePersister
 from lars.services.screenshots import DbScreenshotPersister, ScreenshotExtractor
 from lars.telegram.handlers import (
     EXTRACTOR_KEY,
@@ -58,6 +59,7 @@ async def _post_init(app: Application) -> None:
         DbContextLoader(sessionmaker),
         onboarding_persister=DbOnboardingPersister(sessionmaker),
         screenshot_persister=DbScreenshotPersister(sessionmaker),
+        pulse_persister=DbPulsePersister(sessionmaker),
     )
     app.bot_data[GRAPH_KEY] = graph
     app.bot_data[EXTRACTOR_KEY] = ScreenshotExtractor(adapter, registry)

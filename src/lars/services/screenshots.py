@@ -1,6 +1,7 @@
 """Vision extraction and persistence for workout / scale screenshots."""
 
 import json
+import uuid
 from datetime import UTC, datetime
 from typing import Any
 
@@ -67,13 +68,17 @@ class DbScreenshotPersister:
     def __init__(self, sessionmaker: async_sessionmaker[AsyncSession]) -> None:
         self._sessionmaker = sessionmaker
 
-    async def __call__(self, telegram_id: int, extraction: ScreenshotExtraction) -> None:
+    async def __call__(
+        self, telegram_id: int, extraction: ScreenshotExtraction
+    ) -> uuid.UUID | None:
         when = _aware(extraction.performed_at)
         raw = extraction.model_dump(mode="json")
+        completion_id: uuid.UUID | None = None
+        completion: WorkoutCompletion | None = None
         async with self._sessionmaker() as session:
             user = await UserRepository(session).get_by_telegram_id(telegram_id)
             if user is None:
-                return
+                return None
 
             if extraction.kind == "body_metrics":
                 session.add(
@@ -98,25 +103,26 @@ class DbScreenshotPersister:
                         )
                     )
                 ).scalar_one_or_none()
-                session.add(
-                    WorkoutCompletion(
-                        user_id=user.id,
-                        planned_session_id=planned.id if planned else None,
-                        source=CompletionSource.APPLE_FITNESS_SCREENSHOT,
-                        workout_type=extraction.workout_type,
-                        duration_min=extraction.duration_min,
-                        active_calories=extraction.active_calories,
-                        avg_hr=extraction.avg_hr,
-                        performed_at=when,
-                        raw_extracted=raw,
-                        confirmed_at=datetime.now(UTC),
-                    )
+                completion = WorkoutCompletion(
+                    user_id=user.id,
+                    planned_session_id=planned.id if planned else None,
+                    source=CompletionSource.APPLE_FITNESS_SCREENSHOT,
+                    workout_type=extraction.workout_type,
+                    duration_min=extraction.duration_min,
+                    active_calories=extraction.active_calories,
+                    avg_hr=extraction.avg_hr,
+                    performed_at=when,
+                    raw_extracted=raw,
+                    confirmed_at=datetime.now(UTC),
                 )
+                session.add(completion)
                 if planned is not None:
                     planned.status = SessionStatus.COMPLETED
                 event_type = "workout_logged"
 
             await session.flush()
+            if completion is not None:
+                completion_id = completion.id
             session.add(
                 Event(
                     user_id=user.id,
@@ -125,6 +131,7 @@ class DbScreenshotPersister:
                 )
             )
             await session.commit()
+        return completion_id
 
 
 async def process_photo(

@@ -12,9 +12,11 @@ from lars.workflow.nodes import (
     route_after_classify,
     route_after_confirm,
     route_after_context,
+    route_after_persist_screenshot,
     route_after_screenshot_confirm,
 )
 from lars.workflow.onboarding import OnboardingPersister
+from lars.workflow.pulse import PulsePersister
 from lars.workflow.screenshots import ScreenshotPersister
 from lars.workflow.state import GraphState
 
@@ -27,6 +29,7 @@ def build_graph(
     *,
     onboarding_persister: OnboardingPersister | None = None,
     screenshot_persister: ScreenshotPersister | None = None,
+    pulse_persister: PulsePersister | None = None,
 ) -> Any:
     """Build and compile the workflow graph with the given dependencies."""
     nodes = WorkflowNodes(
@@ -35,6 +38,7 @@ def build_graph(
         context_loader or StubContextLoader(),
         onboarding_persister,
         screenshot_persister,
+        pulse_persister,
     )
 
     graph = StateGraph(GraphState)  # ty: ignore[invalid-argument-type]  # TypedDict bound not recognized
@@ -45,6 +49,7 @@ def build_graph(
     graph.add_node("confirm_write", nodes.confirm_write)
     graph.add_node("confirm_screenshot", nodes.confirm_screenshot)
     graph.add_node("persist_screenshot", nodes.persist_screenshot)
+    graph.add_node("pulse_check", nodes.pulse_check)
     graph.add_node("persist", nodes.persist)
     graph.add_node("respond", nodes.respond)
 
@@ -72,8 +77,13 @@ def build_graph(
         route_after_screenshot_confirm,
         {"persist_screenshot": "persist_screenshot", "respond": "respond"},
     )
+    graph.add_conditional_edges(
+        "persist_screenshot",
+        route_after_persist_screenshot,
+        {"pulse_check": "pulse_check", "end": END},
+    )
     graph.add_edge("onboarding", END)
-    graph.add_edge("persist_screenshot", END)
+    graph.add_edge("pulse_check", END)
     graph.add_edge("persist", "respond")
     graph.add_edge("respond", END)
 

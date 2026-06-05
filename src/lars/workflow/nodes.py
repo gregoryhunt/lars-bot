@@ -6,6 +6,8 @@ onboarding node. The ``persist`` node is a placeholder for non-onboarding writes
 later milestones replace it with real service calls.
 """
 
+import uuid
+
 from langgraph.types import interrupt
 
 from lars.adapters.llm import ModelAdapter
@@ -18,6 +20,7 @@ from lars.workflow.onboarding import (
     format_answers,
     parse_onboarding_json,
 )
+from lars.workflow.pulse import PulsePersister
 from lars.workflow.screenshots import ScreenshotPersister
 from lars.workflow.state import GraphState
 
@@ -29,6 +32,15 @@ CONFIRM_INTENTS = frozenset(
 TRIVIAL_WRITE_INTENTS = frozenset({Intent.LOG_NUTRITION})
 
 _AFFIRMATIVE = {"yes", "y", "confirm", "ok", "okay", "sure", "yep", "yeah", "correct"}
+
+# Pulse-check button labels → stored values.
+_RPE = {"Easy": 3, "Just right": 5, "Hard": 8, "Brutal": 10}
+_ENERGY = {"Low": 1, "OK": 2, "High": 3}
+_SORENESS = {"None": 1, "Some": 2, "A lot": 3}
+
+
+def _is_skip(value: object) -> bool:
+    return str(value).strip().lower() == "skip"
 
 _ONBOARDING_QUESTIONS: list[tuple[str, str]] = [
     (
@@ -83,12 +95,14 @@ class WorkflowNodes:
         context_loader: ContextLoader,
         onboarding_persister: OnboardingPersister | None = None,
         screenshot_persister: ScreenshotPersister | None = None,
+        pulse_persister: PulsePersister | None = None,
     ) -> None:
         self._adapter = adapter
         self._registry = registry
         self._context = context_loader
         self._persister = onboarding_persister
         self._screenshot_persister = screenshot_persister
+        self._pulse_persister = pulse_persister
 
     async def intake(self, state: GraphState) -> GraphState:
         # Read this turn's input from `incoming` (fresh turn) and reset transient
@@ -103,6 +117,7 @@ class WorkflowNodes:
         return {
             "text": text,
             "screenshot": screenshot,
+            "completion_id": None,
             "intent": "",
             "is_new_user": False,
             "confirmed": None,
@@ -159,9 +174,42 @@ class WorkflowNodes:
         if self._screenshot_persister is None:
             raise RuntimeError("screenshot persistence requires a screenshot_persister")
         extraction = ScreenshotExtraction.model_validate(state["screenshot"])
-        await self._screenshot_persister(state["telegram_id"], extraction)
+        completion_id = await self._screenshot_persister(state["telegram_id"], extraction)
         message = f"Saved ✅ {extraction.summary}".rstrip()
-        return {"persisted": True, "response": message}
+        return {
+            "persisted": True,
+            "completion_id": str(completion_id) if completion_id else None,
+            "response": message,
+        }
+
+    async def pulse_check(self, state: GraphState) -> GraphState:
+        rpe = interrupt(
+            {
+                "message": "Saved ✅ Quick check-in — how hard did that feel?",
+                "options": ["Easy", "Just right", "Hard", "Brutal", "Skip"],
+            }
+        )
+        if _is_skip(rpe):
+            return {"response": "No problem — logged it. 💪"}
+        energy = interrupt({"message": "And your energy?", "options": ["Low", "OK", "High"]})
+        soreness = interrupt(
+            {"message": "Any soreness right now?", "options": ["None", "Some", "A lot"]}
+        )
+        note_raw = interrupt(
+            {"message": "Anything else I should know? (type it, or tap Skip)", "options": ["Skip"]}
+        )
+        note = None if _is_skip(note_raw) else str(note_raw)
+
+        completion_id = state.get("completion_id")
+        if self._pulse_persister is not None and completion_id:
+            await self._pulse_persister(
+                uuid.UUID(completion_id),
+                rpe=_RPE.get(str(rpe)),
+                energy=_ENERGY.get(str(energy)),
+                soreness=_SORENESS.get(str(soreness)),
+                note=note,
+            )
+        return {"response": "Got it — thanks! That helps me tune your next workout. 💪"}
 
     async def persist(self, state: GraphState) -> GraphState:
         # Placeholder write; real persistence lands in later milestones.
@@ -187,6 +235,13 @@ def route_after_context(state: GraphState) -> str:
 
 def route_after_screenshot_confirm(state: GraphState) -> str:
     return "persist_screenshot" if state.get("confirmed") else "respond"
+
+
+def route_after_persist_screenshot(state: GraphState) -> str:
+    shot = state.get("screenshot") or {}
+    if shot.get("kind") == "workout" and state.get("completion_id"):
+        return "pulse_check"
+    return "end"
 
 
 def route_after_classify(state: GraphState) -> str:

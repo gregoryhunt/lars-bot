@@ -5,6 +5,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (M8 — pulse check & progression feedback)
+- Post-workout pulse check: after a confirmed workout screenshot, the graph runs a
+  hybrid survey (conversational message + inline tap-buttons) for difficulty/RPE,
+  energy, and soreness, plus an optional free-text note. Fully skippable.
+- Inline-keyboard support end-to-end: `TurnReply` carries button options, handlers
+  render an `InlineKeyboardMarkup`, and `handle_callback` resumes the graph on a tap.
+- `pulse_check` persists a `PulseCheck` linked to the workout completion
+  (`DbPulsePersister`); body-metric screenshots do not trigger a survey.
+- The pulse feeds the next workout generation (a hard recent RPE → hold).
+- Tests: workout → survey → persist (with value mapping), skippable, body-metrics
+  no-survey, and an integration test that a hard last pulse yields a hold directive.
+
+### Changed
+- The screenshot persister now returns the workout completion id so the pulse
+  check can link to it; `run_turn` returns a `TurnReply` (str + options).
+
 ### Added (M7 — workout generation)
 - `WorkoutGenerator`: builds context (split, history, deload-after-skip, recent
   pulse), prompts the model (`workout_generation` prompt), validates a

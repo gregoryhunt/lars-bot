@@ -8,8 +8,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from lars.adapters.llm import MockModelAdapter
-from lars.domain.enums import SessionStatus
-from lars.persistence.models import GeneratedWorkout, PlannedSession, User
+from lars.domain.enums import CompletionSource, SessionStatus
+from lars.persistence.models import (
+    GeneratedWorkout,
+    PlannedSession,
+    PulseCheck,
+    User,
+    WorkoutCompletion,
+)
 from lars.prompts import PromptRegistry
 from lars.scheduler.clock import SystemClock
 from lars.services.generation import WorkoutGenerator
@@ -104,6 +110,31 @@ async def test_deload_after_missed_session(
     result = await _generator(sessions, [PRESCRIPTION_JSON]).generate(planned_id)
     assert result is not None
     assert result.progression == "deload"
+
+
+async def test_hold_when_last_pulse_was_hard(
+    sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    user_id = await _make_user(sessions, 7005)
+    prior_id = await _add_session(
+        sessions, user_id, dt.date(2026, 6, 1), "pull", SessionStatus.COMPLETED
+    )
+    async with sessions() as session:
+        completion = WorkoutCompletion(
+            user_id=user_id,
+            planned_session_id=prior_id,
+            source=CompletionSource.APPLE_FITNESS_SCREENSHOT,
+            performed_at=dt.datetime(2026, 6, 1, 18, 0, tzinfo=dt.UTC),
+        )
+        session.add(completion)
+        await session.flush()
+        session.add(PulseCheck(completion_id=completion.id, rpe=8))
+        await session.commit()
+    current_id = await _add_session(sessions, user_id, dt.date(2026, 6, 8), "pull")
+
+    result = await _generator(sessions, [PRESCRIPTION_JSON]).generate(current_id)
+    assert result is not None
+    assert result.progression == "hold"
 
 
 async def test_no_silent_regeneration(
