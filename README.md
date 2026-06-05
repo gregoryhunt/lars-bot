@@ -4,11 +4,11 @@ A personal-coach Telegram bot for a small, fixed group of users that tracks
 workouts, body weight, and nutrition, and generates each user's next workout the
 night before a scheduled training day.
 
-> **Status: building — M1 (domain models & persistence) complete.** The repo holds
-> the design artifacts (`MVP_PLAN.md`, `TASKS.md`, `docs/`) plus the skeleton and a
-> working persistence layer: uv project, typed settings, async SQLAlchemy ORM for
-> all core tables, Alembic migrations, and an integration-tested repository layer.
-> Setup steps and commands below are marked where not yet implemented.
+> **Status: building — M2 (Telegram skeleton & allowlist) complete.** The repo holds
+> the design artifacts (`MVP_PLAN.md`, `TASKS.md`, `docs/`) plus a working
+> persistence layer and a runnable Telegram bot skeleton: allowlist gate and
+> handlers for text/photo/button updates (placeholder replies; real intent
+> handling lands with the LangGraph workflow in M3).
 
 ## What Lars does
 
@@ -108,7 +108,7 @@ cp .env.example .env   # then fill in the values below
 # 4. Run migrations (works today)
 uv run alembic upgrade head
 
-# 5. Run the bot (not yet — added in M2)
+# 5. Run the bot (works today — needs a real TELEGRAM_BOT_TOKEN in .env)
 uv run lars
 ```
 

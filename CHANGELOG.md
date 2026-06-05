@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (M2 — Telegram skeleton & allowlist)
+- Async python-telegram-bot application bootstrap (`src/lars/telegram/app.py`)
+  with handlers for text, photo, and callback-query (button) updates.
+- Allowlist gate keyed on Telegram user id: allowlisted users get a placeholder
+  acknowledgement, others are politely declined (`src/lars/telegram/handlers.py`).
+- `uv run lars` console entry point (`src/lars/cli.py`) and structured logging
+  setup (`src/lars/logging_config.py`).
+- Handler tests covering allowlisted/declined paths for text, photo, and
+  callbacks, plus application wiring.
+
 ### Added (M1 — domain models & persistence)
 - Shared domain enums (`src/lars/domain/enums.py`) and a Pydantic
   `WorkoutPrescription` value object for the generated-workout JSON payload.

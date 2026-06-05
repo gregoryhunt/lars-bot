@@ -19,11 +19,11 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
 - [x] Integration test: migrations apply; repo create/read round-trips on Postgres.
 
 ## M2 — Telegram skeleton + allowlist
-- [ ] Async python-telegram-bot app bootstrap + entrypoint (`uv run lars`).
-- [ ] Allowlist middleware/gate keyed on Telegram user id.
-- [ ] Handlers registered for text, photo, and callback-query (button) updates.
-- [ ] Structured logging setup.
-- [ ] Test: allowlisted user gets a reply; non-allowlisted declined, nothing persisted.
+- [x] Async python-telegram-bot app bootstrap + entrypoint (`uv run lars`).
+- [x] Allowlist middleware/gate keyed on Telegram user id.
+- [x] Handlers registered for text, photo, and callback-query (button) updates.
+- [x] Structured logging setup.
+- [x] Test: allowlisted user gets a reply; non-allowlisted declined, nothing persisted.
 
 ## M3 — LangGraph workflow + model adapter
 - [ ] Model adapter protocol (`generate`, `generate_with_images`) + Anthropic impl.
