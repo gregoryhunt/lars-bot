@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (M7 — workout generation)
+- `WorkoutGenerator`: builds context (split, history, deload-after-skip, recent
+  pulse), prompts the model (`workout_generation` prompt), validates a
+  `WorkoutPrescription`, and persists a `GeneratedWorkout` tied to the planned
+  session (status → generated).
+- Deterministic guardrails: split resolved from the schedule, a prior
+  skipped/missed comparable session forces a deload directive, a hard recent RPE
+  forces a hold, and there is no silent regeneration — an existing prescription is
+  reused unless regeneration is explicitly requested (`regenerated_count` bumped).
+- The nightly job now generates the prescription and sends it to the user
+  (`format_prescription`).
+- Tests: valid prescription persisted + session marked generated, progress with no
+  history, deload after a missed session, and the no-silent-regeneration guardrail.
+
 ### Added (M6 — scheduling: nightly generation & skip checks)
 - `Clock` abstraction (`SystemClock`) so time-dependent logic is testable.
 - `SchedulingService`: `generate_for_tomorrow` ensures exactly one planned session

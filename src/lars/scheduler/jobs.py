@@ -15,11 +15,13 @@ from telegram.ext import Application, ContextTypes
 
 from lars.domain.enums import JobType
 from lars.persistence.repositories import JobWithUser, ScheduledJobRepository
+from lars.services.generation import format_prescription
 
 logger = logging.getLogger(__name__)
 
 SCHEDULER_KEY = "scheduler"
 SESSIONMAKER_KEY = "sessionmaker"
+GENERATOR_KEY = "generator"
 
 _DEFAULT_TIME = time(20, 0)
 
@@ -36,11 +38,18 @@ def _job_data(context: ContextTypes.DEFAULT_TYPE) -> dict[str, Any] | None:
 
 async def _nightly_job(context: ContextTypes.DEFAULT_TYPE) -> None:
     service = context.application.bot_data[SCHEDULER_KEY]
+    generator = context.application.bot_data[GENERATOR_KEY]
     data = _job_data(context)
     if data is None:
         return
-    await service.generate_for_tomorrow(uuid.UUID(data["user_id"]))
-    # M7 will generate the prescription and send it to data["telegram_id"].
+    planned = await service.generate_for_tomorrow(uuid.UUID(data["user_id"]))
+    if planned is None:
+        return
+    result = await generator.generate(planned.id)
+    if result is not None:
+        await context.bot.send_message(
+            chat_id=data["telegram_id"], text=format_prescription(result.prescription)
+        )
 
 
 async def _skip_check_job(context: ContextTypes.DEFAULT_TYPE) -> None:

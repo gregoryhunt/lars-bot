@@ -65,12 +65,13 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
       (Prescription generation itself is M7; M6 creates the planned session.)
 
 ## M7 — Workout generation workflow
-- [ ] Generation node: build context (schedule, history, skips, pulse feedback) →
+- [x] Generation node: build context (schedule, history, skips, pulse feedback) →
       LLM prescription → validate to schema → persist tied to planned session.
-- [ ] Deterministic guardrails (split resolution, dedup, deload-after-skip rule).
-- [ ] No silent regeneration (regenerate only on explicit user request).
-- [ ] Test: schema-valid prescription returned; prior skip changes prescription
+- [x] Deterministic guardrails (split resolution, dedup, deload-after-skip rule).
+- [x] No silent regeneration (regenerate only on explicit user request).
+- [x] Test: schema-valid prescription returned; prior skip changes prescription
       per rule; regeneration requires explicit request.
+      (Wired into the nightly job, which now generates + sends the workout.)
 
 ## M8 — Pulse check + progression feedback
 - [ ] Post-completion hybrid survey (message + inline buttons): RPE, energy, soreness.

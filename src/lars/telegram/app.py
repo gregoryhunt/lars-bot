@@ -12,8 +12,14 @@ from lars.logging_config import setup_logging
 from lars.persistence import create_engine, create_sessionmaker
 from lars.prompts import PromptRegistry
 from lars.scheduler.clock import SystemClock
-from lars.scheduler.jobs import SCHEDULER_KEY, SESSIONMAKER_KEY, rehydrate_jobs
+from lars.scheduler.jobs import (
+    GENERATOR_KEY,
+    SCHEDULER_KEY,
+    SESSIONMAKER_KEY,
+    rehydrate_jobs,
+)
 from lars.scheduler.service import SchedulingService
+from lars.services.generation import WorkoutGenerator
 from lars.services.onboarding import DbOnboardingPersister
 from lars.services.screenshots import DbScreenshotPersister, ScreenshotExtractor
 from lars.telegram.handlers import (
@@ -55,8 +61,10 @@ async def _post_init(app: Application) -> None:
     )
     app.bot_data[GRAPH_KEY] = graph
     app.bot_data[EXTRACTOR_KEY] = ScreenshotExtractor(adapter, registry)
+    clock = SystemClock()
     app.bot_data[SESSIONMAKER_KEY] = sessionmaker
-    app.bot_data[SCHEDULER_KEY] = SchedulingService(sessionmaker, SystemClock())
+    app.bot_data[SCHEDULER_KEY] = SchedulingService(sessionmaker, clock)
+    app.bot_data[GENERATOR_KEY] = WorkoutGenerator(sessionmaker, adapter, registry, clock)
     app.bot_data[_SAVER_CM_KEY] = saver_cm
     app.bot_data[_ENGINE_KEY] = engine
 
