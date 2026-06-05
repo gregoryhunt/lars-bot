@@ -6,7 +6,8 @@ services:
       POSTGRES_PASSWORD: lars
       POSTGRES_DB: lars
     ports:
-      - "5432:5432"
+      # Host 5433 to avoid clashing with a local Postgres on 5432.
+      - "5433:5432"
     volumes:
       - lars_pgdata:/var/lib/postgresql/data
 

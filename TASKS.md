@@ -12,11 +12,11 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
 - [x] Test: settings load with valid env; fail clearly on missing required vars.
 
 ## M1 — Domain models & persistence foundation
-- [ ] Pydantic domain models + enums (see `docs/data-model.md`).
-- [ ] SQLAlchemy ORM models for core tables.
-- [ ] Alembic init + baseline migration creating all core tables.
-- [ ] Repository layer (per aggregate) with explicit interfaces.
-- [ ] Integration test: migrations apply; repo create/read round-trips on Postgres.
+- [x] Pydantic domain models + enums (see `docs/data-model.md`).
+- [x] SQLAlchemy ORM models for core tables.
+- [x] Alembic init + baseline migration creating all core tables.
+- [x] Repository layer (per aggregate) with explicit interfaces.
+- [x] Integration test: migrations apply; repo create/read round-trips on Postgres.
 
 ## M2 — Telegram skeleton + allowlist
 - [ ] Async python-telegram-bot app bootstrap + entrypoint (`uv run lars`).
