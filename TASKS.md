@@ -26,14 +26,16 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
 - [x] Test: allowlisted user gets a reply; non-allowlisted declined, nothing persisted.
 
 ## M3 — LangGraph workflow + model adapter
-- [ ] Model adapter protocol (`generate`, `generate_with_images`) + Anthropic impl.
-- [ ] Mock adapter for tests.
-- [ ] Prompt registry module (markdown prompts loaded by key + version).
-- [ ] LangGraph graph: intake → load context → classify intent → route → persist → respond.
-- [ ] Postgres checkpointer wired in.
-- [ ] Confirm-before-write gate for important writes.
-- [ ] Test: intents route correctly (mock adapter); checkpoint persists/resumes;
+- [x] Model adapter protocol (`generate`, `generate_with_images`) + Anthropic impl.
+- [x] Mock adapter for tests.
+- [x] Prompt registry module (markdown prompts loaded by key + version).
+- [x] LangGraph graph: intake → load context → classify intent → route → persist → respond.
+- [x] Postgres checkpointer wired in.
+- [x] Confirm-before-write gate for important writes.
+- [x] Test: intents route correctly (mock adapter); checkpoint persists/resumes;
       important write blocked until confirmation.
+- [ ] (Deferred to M4) Wire the graph into the live Telegram handlers, replacing
+      M2's placeholder replies, once onboarding gives it real behavior.
 
 ## M4 — Onboarding
 - [ ] First-message detection (no user row → onboarding).

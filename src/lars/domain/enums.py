@@ -52,3 +52,28 @@ class JobType(StrEnum):
     NIGHTLY_GENERATION = "nightly_generation"
     SKIP_CHECK = "skip_check"
     GOAL_REVIEW = "goal_review"
+
+
+class Intent(StrEnum):
+    """Natural-language intents the classifier routes to (see conversational-flows.md)."""
+
+    ONBOARDING = "onboarding"
+    LOG_WORKOUT = "log_workout"
+    LOG_WEIGHT = "log_weight"
+    LOG_NUTRITION = "log_nutrition"
+    VIEW_PLAN = "view_plan"
+    VIEW_TRENDS = "view_trends"
+    CHANGE_SCHEDULE = "change_schedule"
+    REPORT_SKIP = "report_skip"
+    REQUEST_GENERATION = "request_generation"
+    HELP = "help"
+    UNKNOWN = "unknown"
+
+    @classmethod
+    def parse(cls, raw: str) -> "Intent":
+        """Best-effort parse of a model's label; falls back to UNKNOWN."""
+        token = raw.strip().lower().splitlines()[0].strip() if raw.strip() else ""
+        try:
+            return cls(token)
+        except ValueError:
+            return cls.UNKNOWN

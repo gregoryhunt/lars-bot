@@ -5,6 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (M3 — LangGraph workflow & model adapter)
+- Model adapter Protocol (`generate`, `generate_with_images`) with an Anthropic
+  (Claude, text + vision) implementation and a scripted `MockModelAdapter`.
+- Prompt registry loading versioned markdown templates by key
+  (`src/lars/prompts/`), with an intent-classification prompt.
+- `Intent` enum and a LangGraph workflow:
+  intake → load_context → classify → route → (confirm_write) → persist → respond.
+- Confirm-before-write gate via LangGraph `interrupt`: important-write intents
+  pause until the user confirms; trivial writes persist directly; new users
+  short-circuit to onboarding.
+- Postgres checkpointer helper (`AsyncPostgresSaver`) for durable graph state.
+- Tests: intent routing and confirm/reject flow (in-memory), and a Postgres
+  integration test proving checkpoint state persists/resumes across instances.
+
+### Note
+- The graph is not yet wired into the live Telegram handlers — M2's placeholder
+  replies remain until M4 (onboarding) gives the graph real behavior. The
+  `persist` node is a placeholder; real writes land in later milestones.
+
 ### Added (M2 — Telegram skeleton & allowlist)
 - Async python-telegram-bot application bootstrap (`src/lars/telegram/app.py`)
   with handlers for text, photo, and callback-query (button) updates.
