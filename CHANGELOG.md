@@ -5,6 +5,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (M9 — nutrition logging)
+- Open Food Facts adapter (`OpenFoodFactsClient.by_barcode` → calories + macros,
+  per serving with a 100g fallback).
+- `NutritionService.log_from_text`: a pure-digit message is treated as a barcode
+  and resolved via Open Food Facts; otherwise the model estimates items + macros
+  (`nutrition_extraction` prompt). Each record stores its source/provenance and
+  quantity. The reply includes the running daily totals.
+- `log_nutrition` graph node for the nutrition intent (replaces the placeholder
+  trivial-write path).
+- Nutrition-label photos: the screenshot extractor now classifies
+  `nutrition_label` and the screenshot persister logs it (source `label_photo`).
+- `NutritionRepository` with `add` and `daily_totals`.
+- Tests: Open Food Facts parsing (mock transport), text-estimate and barcode
+  logging paths with provenance, and daily-totals accumulation.
+
 ### Added (M8 — pulse check & progression feedback)
 - Post-workout pulse check: after a confirmed workout screenshot, the graph runs a
   hybrid survey (conversational message + inline tap-buttons) for difficulty/RPE,

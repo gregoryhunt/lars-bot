@@ -9,9 +9,20 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from lars.adapters.llm import Image, ModelAdapter
-from lars.domain.enums import BodyMetricSource, CompletionSource, SessionStatus
+from lars.domain.enums import (
+    BodyMetricSource,
+    CompletionSource,
+    NutritionSource,
+    SessionStatus,
+)
 from lars.domain.models import ScreenshotExtraction
-from lars.persistence.models import BodyMetric, Event, PlannedSession, WorkoutCompletion
+from lars.persistence.models import (
+    BodyMetric,
+    Event,
+    NutritionLog,
+    PlannedSession,
+    WorkoutCompletion,
+)
 from lars.persistence.repositories import UserRepository
 from lars.prompts import PromptRegistry
 from lars.workflow.runner import run_turn
@@ -59,6 +70,8 @@ def needs_clarification(extraction: ScreenshotExtraction) -> bool:
         return extraction.weight_kg is None
     if extraction.kind == "workout":
         return extraction.workout_type is None and extraction.duration_min is None
+    if extraction.kind == "nutrition_label":
+        return extraction.calories is None
     return True
 
 
@@ -94,6 +107,22 @@ class DbScreenshotPersister:
                     )
                 )
                 event_type = "weight_logged"
+            elif extraction.kind == "nutrition_label":
+                session.add(
+                    NutritionLog(
+                        user_id=user.id,
+                        logged_for_date=when.date(),
+                        item_name=extraction.item_name or "label",
+                        source=NutritionSource.LABEL_PHOTO,
+                        quantity="1 serving",
+                        calories=extraction.calories,
+                        protein_g=extraction.protein_g,
+                        carbs_g=extraction.carbs_g,
+                        fat_g=extraction.fat_g,
+                        raw_extracted=raw,
+                    )
+                )
+                event_type = "nutrition_logged"
             else:  # workout
                 planned = (
                     await session.execute(

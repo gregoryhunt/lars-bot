@@ -15,6 +15,7 @@ from lars.domain.enums import Intent
 from lars.domain.models import ScreenshotExtraction
 from lars.prompts import PromptRegistry
 from lars.workflow.context import ContextLoader
+from lars.workflow.nutrition import NutritionLogger
 from lars.workflow.onboarding import (
     OnboardingPersister,
     format_answers,
@@ -28,8 +29,6 @@ from lars.workflow.state import GraphState
 CONFIRM_INTENTS = frozenset(
     {Intent.LOG_WEIGHT, Intent.LOG_WORKOUT, Intent.CHANGE_SCHEDULE, Intent.REPORT_SKIP}
 )
-# Writes that are low-stakes enough to persist without confirmation.
-TRIVIAL_WRITE_INTENTS = frozenset({Intent.LOG_NUTRITION})
 
 _AFFIRMATIVE = {"yes", "y", "confirm", "ok", "okay", "sure", "yep", "yeah", "correct"}
 
@@ -96,6 +95,7 @@ class WorkflowNodes:
         onboarding_persister: OnboardingPersister | None = None,
         screenshot_persister: ScreenshotPersister | None = None,
         pulse_persister: PulsePersister | None = None,
+        nutrition_logger: NutritionLogger | None = None,
     ) -> None:
         self._adapter = adapter
         self._registry = registry
@@ -103,6 +103,7 @@ class WorkflowNodes:
         self._persister = onboarding_persister
         self._screenshot_persister = screenshot_persister
         self._pulse_persister = pulse_persister
+        self._nutrition_logger = nutrition_logger
 
     async def intake(self, state: GraphState) -> GraphState:
         # Read this turn's input from `incoming` (fresh turn) and reset transient
@@ -211,6 +212,14 @@ class WorkflowNodes:
             )
         return {"response": "Got it — thanks! That helps me tune your next workout. 💪"}
 
+    async def log_nutrition(self, state: GraphState) -> GraphState:
+        if self._nutrition_logger is None:
+            raise RuntimeError("nutrition logging requires a nutrition_logger")
+        summary = await self._nutrition_logger.log_from_text(
+            state["telegram_id"], state.get("text", "")
+        )
+        return {"persisted": True, "response": summary}
+
     async def persist(self, state: GraphState) -> GraphState:
         # Placeholder write; real persistence lands in later milestones.
         return {"persisted": True}
@@ -248,8 +257,8 @@ def route_after_classify(state: GraphState) -> str:
     intent = Intent.parse(state.get("intent", Intent.UNKNOWN.value))
     if intent in CONFIRM_INTENTS:
         return "confirm_write"
-    if intent in TRIVIAL_WRITE_INTENTS:
-        return "persist"
+    if intent == Intent.LOG_NUTRITION:
+        return "log_nutrition"
     return "respond"
 
 

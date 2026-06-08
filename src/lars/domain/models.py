@@ -14,14 +14,14 @@ from lars.domain.enums import ExperienceLevel, GoalType
 
 
 class ScreenshotExtraction(BaseModel):
-    """What the vision model read from an Apple Fitness or smart-scale screenshot.
+    """What the vision model read from a workout, scale, or nutrition-label photo.
 
     The model classifies the screenshot, gives a confidence, a human-readable
     summary (in the original units), the date/time shown, and the structured
     fields in canonical units (kg).
     """
 
-    kind: Literal["workout", "body_metrics", "unknown"] = "unknown"
+    kind: Literal["workout", "body_metrics", "nutrition_label", "unknown"] = "unknown"
     confidence: float = 0.0
     summary: str = ""
     performed_at: datetime | None = None  # the date/time shown on the screenshot
@@ -37,6 +37,41 @@ class ScreenshotExtraction(BaseModel):
     body_fat_pct: float | None = None
     lean_mass_kg: float | None = None
     bmi: float | None = None
+
+    # Nutrition label (per serving)
+    item_name: str | None = None
+    calories: float | None = None
+    protein_g: float | None = None
+    carbs_g: float | None = None
+    fat_g: float | None = None
+
+
+class NutritionItem(BaseModel):
+    """One logged food item with best-effort calories and macros."""
+
+    name: str
+    quantity: str | None = None
+    calories: float | None = None
+    protein_g: float | None = None
+    carbs_g: float | None = None
+    fat_g: float | None = None
+
+
+class NutritionEstimate(BaseModel):
+    """The model's estimate for a free-text meal description."""
+
+    items: list[NutritionItem] = Field(default_factory=list)
+
+
+class NutritionFacts(BaseModel):
+    """Nutrition facts resolved from Open Food Facts (per serving or per 100g)."""
+
+    name: str
+    serving: str | None = None
+    calories: float | None = None
+    protein_g: float | None = None
+    carbs_g: float | None = None
+    fat_g: float | None = None
 
 
 class OnboardingResult(BaseModel):

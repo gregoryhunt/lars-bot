@@ -81,12 +81,12 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
       generation receives pulse context.
 
 ## M9 — Nutrition logging
-- [ ] Open Food Facts adapter (search/barcode → calories + macros per serving).
-- [ ] Nutrition-label photo parse (vision) → calories + macros.
-- [ ] LLM estimate fallback for generic/home-cooked (raw-ingredient judgment).
-- [ ] Quantity handling + provenance (source) on each record.
-- [ ] Daily totals query.
-- [ ] Test: each path creates a record; branded resolves via OFF; generic falls
+- [x] Open Food Facts adapter (barcode → calories + macros per serving).
+- [x] Nutrition-label photo parse (vision) → calories + macros.
+- [x] LLM estimate fallback for generic/home-cooked (raw-ingredient judgment).
+- [x] Quantity handling + provenance (source) on each record.
+- [x] Daily totals query.
+- [x] Test: each path creates a record; branded resolves via OFF; generic falls
       back to estimate; daily totals correct.
 
 ## M10 — Audit trail + hardening

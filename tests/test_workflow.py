@@ -32,11 +32,22 @@ async def test_read_intent_routes_to_respond_without_persisting() -> None:
     assert len(adapter.prompts) == 1  # classify ran once
 
 
-async def test_trivial_write_persists_without_confirmation() -> None:
-    graph, _ = make_graph("log_nutrition")
+async def test_nutrition_intent_routes_to_logger() -> None:
+    class FakeLogger:
+        async def log_from_text(self, telegram_id: int, text: str) -> str:
+            return "Logged 1 item (~200 cal)."
+
+    graph = build_graph(
+        MockModelAdapter(["log_nutrition"]),
+        PromptRegistry(),
+        MemorySaver(),
+        StubContextLoader(),
+        nutrition_logger=FakeLogger(),
+    )
     result = await graph.ainvoke({"telegram_id": 1, "text": "ate a banana"}, cfg())
     assert result["intent"] == "log_nutrition"
     assert result["persisted"] is True
+    assert "logged" in result["response"].lower()
 
 
 async def test_new_user_routed_to_onboarding() -> None:

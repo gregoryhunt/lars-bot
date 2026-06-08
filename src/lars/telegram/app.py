@@ -3,10 +3,12 @@
 import logging
 from typing import Any
 
+import httpx
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from telegram.ext import Application, CallbackQueryHandler, MessageHandler, filters
 
 from lars.adapters.llm.anthropic import AnthropicAdapter
+from lars.adapters.nutrition import OpenFoodFactsClient
 from lars.config import Settings, get_settings
 from lars.logging_config import setup_logging
 from lars.persistence import create_engine, create_sessionmaker
@@ -20,6 +22,7 @@ from lars.scheduler.jobs import (
 )
 from lars.scheduler.service import SchedulingService
 from lars.services.generation import WorkoutGenerator
+from lars.services.nutrition import NutritionService
 from lars.services.onboarding import DbOnboardingPersister
 from lars.services.pulse import DbPulsePersister
 from lars.services.screenshots import DbScreenshotPersister, ScreenshotExtractor
@@ -38,6 +41,7 @@ logger = logging.getLogger(__name__)
 
 _SAVER_CM_KEY = "_saver_cm"
 _ENGINE_KEY = "_engine"
+_HTTP_KEY = "_http"
 
 
 async def _post_init(app: Application) -> None:
@@ -52,6 +56,10 @@ async def _post_init(app: Application) -> None:
 
     adapter = AnthropicAdapter(settings.anthropic_api_key, settings.anthropic_model)
     registry = PromptRegistry()
+    clock = SystemClock()
+    http_client = httpx.AsyncClient(timeout=10.0)
+    off_client = OpenFoodFactsClient(http_client)
+    nutrition = NutritionService(sessionmaker, adapter, registry, off_client, clock)
     graph = build_graph(
         adapter,
         registry,
@@ -60,15 +68,16 @@ async def _post_init(app: Application) -> None:
         onboarding_persister=DbOnboardingPersister(sessionmaker),
         screenshot_persister=DbScreenshotPersister(sessionmaker),
         pulse_persister=DbPulsePersister(sessionmaker),
+        nutrition_logger=nutrition,
     )
     app.bot_data[GRAPH_KEY] = graph
     app.bot_data[EXTRACTOR_KEY] = ScreenshotExtractor(adapter, registry)
-    clock = SystemClock()
     app.bot_data[SESSIONMAKER_KEY] = sessionmaker
     app.bot_data[SCHEDULER_KEY] = SchedulingService(sessionmaker, clock)
     app.bot_data[GENERATOR_KEY] = WorkoutGenerator(sessionmaker, adapter, registry, clock)
     app.bot_data[_SAVER_CM_KEY] = saver_cm
     app.bot_data[_ENGINE_KEY] = engine
+    app.bot_data[_HTTP_KEY] = http_client
 
     await rehydrate_jobs(app)
     logger.info("workflow graph ready")
@@ -78,6 +87,9 @@ async def _post_shutdown(app: Application) -> None:
     saver_cm: Any = app.bot_data.get(_SAVER_CM_KEY)
     if saver_cm is not None:
         await saver_cm.__aexit__(None, None, None)
+    http_client = app.bot_data.get(_HTTP_KEY)
+    if http_client is not None:
+        await http_client.aclose()
     engine = app.bot_data.get(_ENGINE_KEY)
     if engine is not None:
         await engine.dispose()

@@ -5,6 +5,7 @@ reading. Extract what you can and return a single JSON object.
 Classify it as one of:
 - "workout": an exercise/workout summary (type, duration, calories, heart rate).
 - "body_metrics": a scale reading (body weight, body fat %, lean mass, BMI).
+- "nutrition_label": a food nutrition-facts label (calories and macros per serving).
 - "unknown": anything else, or too unclear to read.
 
 Return JSON with these keys:
@@ -22,6 +23,11 @@ Return JSON with these keys:
 - body_fat_pct: body fat percent or null.
 - lean_mass_kg: lean/muscle mass in kilograms, or null.
 - bmi: number or null.
+- item_name: the food/product name, or null (nutrition labels).
+- calories: calories per serving, or null.
+- protein_g: protein grams per serving, or null.
+- carbs_g: carbohydrate grams per serving, or null.
+- fat_g: fat grams per serving, or null.
 
 Rules:
 - Output ONLY the JSON object. No markdown fences, no commentary.
