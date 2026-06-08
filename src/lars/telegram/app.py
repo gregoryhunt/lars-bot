@@ -26,6 +26,7 @@ from lars.scheduler.jobs import (
     GENERATOR_KEY,
     SCHEDULER_KEY,
     SESSIONMAKER_KEY,
+    SUMMARY_KEY,
     rehydrate_jobs,
 )
 from lars.scheduler.service import SchedulingService
@@ -35,6 +36,7 @@ from lars.services.nutrition import NutritionService
 from lars.services.onboarding import DbOnboardingPersister
 from lars.services.pulse import DbPulsePersister
 from lars.services.screenshots import DbScreenshotPersister, ScreenshotExtractor
+from lars.services.summary import SummaryService
 from lars.telegram.handlers import (
     EXTRACTOR_KEY,
     GRAPH_KEY,
@@ -71,6 +73,8 @@ async def _post_init(app: Application) -> None:
     http_client = httpx.AsyncClient(timeout=10.0)
     off_client = OpenFoodFactsClient(http_client)
     nutrition = NutritionService(sessionmaker, adapter, registry, off_client, clock)
+    metrics_service = HealthMetricsService(sessionmaker)
+    summary = SummaryService(sessionmaker, adapter, registry, metrics_service, clock)
     graph = build_graph(
         adapter,
         registry,
@@ -80,12 +84,13 @@ async def _post_init(app: Application) -> None:
         screenshot_persister=DbScreenshotPersister(sessionmaker),
         pulse_persister=DbPulsePersister(sessionmaker),
         nutrition_logger=nutrition,
+        summary_provider=summary,
     )
     app.bot_data[GRAPH_KEY] = graph
     app.bot_data[EXTRACTOR_KEY] = ScreenshotExtractor(adapter, registry)
     app.bot_data[SESSIONMAKER_KEY] = sessionmaker
     app.bot_data[SCHEDULER_KEY] = SchedulingService(sessionmaker, clock)
-    metrics_service = HealthMetricsService(sessionmaker)
+    app.bot_data[SUMMARY_KEY] = summary
     app.bot_data[GENERATOR_KEY] = WorkoutGenerator(
         sessionmaker, adapter, registry, clock, metrics_service
     )

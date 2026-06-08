@@ -23,8 +23,10 @@ logger = logging.getLogger(__name__)
 SCHEDULER_KEY = "scheduler"
 SESSIONMAKER_KEY = "sessionmaker"
 GENERATOR_KEY = "generator"
+SUMMARY_KEY = "summary"
 
 _DEFAULT_TIME = time(20, 0)
+_SUNDAY = (6,)  # python-telegram-bot run_daily: 0=Mon … 6=Sun
 
 
 def _job_name(prefix: str, telegram_id: int) -> str:
@@ -89,9 +91,20 @@ async def _skip_check_job(context: ContextTypes.DEFAULT_TYPE) -> None:
         )
 
 
+async def _weekly_summary_job(context: ContextTypes.DEFAULT_TYPE) -> None:
+    summary = context.application.bot_data[SUMMARY_KEY]
+    data = _job_data(context)
+    if data is None:
+        return
+    text = await summary.summarize(data["telegram_id"], 7)
+    await context.bot.send_message(chat_id=data["telegram_id"], text=text)
+
+
+# job_type -> (name prefix, callback, days-of-week or None for every day)
 _CALLBACKS = {
-    JobType.NIGHTLY_GENERATION: ("nightly", _nightly_job),
-    JobType.SKIP_CHECK: ("skip", _skip_check_job),
+    JobType.NIGHTLY_GENERATION: ("nightly", _nightly_job, None),
+    JobType.SKIP_CHECK: ("skip", _skip_check_job, None),
+    JobType.WEEKLY_SUMMARY: ("summary", _weekly_summary_job, _SUNDAY),
 }
 
 
@@ -101,17 +114,19 @@ def register_jobs(job_queue: Any, entries: Sequence[JobWithUser]) -> None:
         callback = _CALLBACKS.get(job.job_type)
         if callback is None:
             continue
-        prefix, fn = callback
+        prefix, fn, days = callback
         name = _job_name(prefix, telegram_id)
         for existing in job_queue.get_jobs_by_name(name):
             existing.schedule_removal()
         run_at = (job.run_local_time or _DEFAULT_TIME).replace(tzinfo=ZoneInfo(timezone))
-        job_queue.run_daily(
-            fn,
-            time=run_at,
-            name=name,
-            data={"user_id": str(job.user_id), "telegram_id": telegram_id},
-        )
+        kwargs: dict[str, Any] = {
+            "time": run_at,
+            "name": name,
+            "data": {"user_id": str(job.user_id), "telegram_id": telegram_id},
+        }
+        if days is not None:
+            kwargs["days"] = days
+        job_queue.run_daily(fn, **kwargs)
 
 
 async def rehydrate_jobs(app: Application) -> None:

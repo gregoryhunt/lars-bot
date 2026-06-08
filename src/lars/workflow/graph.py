@@ -20,6 +20,7 @@ from lars.workflow.onboarding import OnboardingPersister
 from lars.workflow.pulse import PulsePersister
 from lars.workflow.screenshots import ScreenshotPersister
 from lars.workflow.state import GraphState
+from lars.workflow.summary import SummaryProvider
 
 
 def build_graph(
@@ -32,6 +33,7 @@ def build_graph(
     screenshot_persister: ScreenshotPersister | None = None,
     pulse_persister: PulsePersister | None = None,
     nutrition_logger: NutritionLogger | None = None,
+    summary_provider: SummaryProvider | None = None,
 ) -> Any:
     """Build and compile the workflow graph with the given dependencies."""
     nodes = WorkflowNodes(
@@ -42,6 +44,7 @@ def build_graph(
         screenshot_persister,
         pulse_persister,
         nutrition_logger,
+        summary_provider,
     )
 
     graph = StateGraph(GraphState)  # ty: ignore[invalid-argument-type]  # TypedDict bound not recognized
@@ -54,6 +57,7 @@ def build_graph(
     graph.add_node("persist_screenshot", nodes.persist_screenshot)
     graph.add_node("pulse_check", nodes.pulse_check)
     graph.add_node("log_nutrition", nodes.log_nutrition)
+    graph.add_node("summarize", nodes.summarize)
     graph.add_node("persist", nodes.persist)
     graph.add_node("respond", nodes.respond)
 
@@ -74,6 +78,7 @@ def build_graph(
         {
             "confirm_write": "confirm_write",
             "log_nutrition": "log_nutrition",
+            "summarize": "summarize",
             "respond": "respond",
         },
     )
@@ -93,6 +98,7 @@ def build_graph(
     graph.add_edge("onboarding", END)
     graph.add_edge("pulse_check", END)
     graph.add_edge("log_nutrition", END)
+    graph.add_edge("summarize", END)
     graph.add_edge("persist", "respond")
     graph.add_edge("respond", END)
 

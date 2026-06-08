@@ -106,9 +106,12 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
 - [x] Feed metrics into workout-generation context.
 - [x] Tests: metrics compute / None without weight; onboarding persists activity + initial weight.
 
-### M12 — Weekly/monthly summaries (planned)
-- [ ] Scheduled summary job(s) compiling workouts/weight/nutrition + metrics into a Lars message.
-- [ ] "Answer if asked" path so Lars can report metrics/progress on request.
+### M12 — Weekly/monthly summaries
+- [x] `SummaryService` compiling workouts/weight/nutrition + metrics over a window.
+- [x] Scheduled weekly summary job (Sunday evening), persisted + rehydrated.
+- [x] "Answer if asked" path: `view_trends` intent → summary (weekly, or monthly by keyword).
+- [ ] Scheduled *monthly* summary (deferred — JobQueue has no native monthly trigger;
+      monthly is available on demand via "how's my month").
 
 ### M13 — Dynamic activity level (planned)
 - [ ] Adjust activity level from workouts logged during the week.

@@ -17,6 +17,7 @@ from lars.persistence.models import (
 from lars.persistence.repositories import ScheduledJobRepository, UserRepository
 
 _SKIP_CHECK_TIME = time(21, 0)
+_SUMMARY_TIME = time(18, 0)
 
 
 def _parse_hhmm(value: str) -> time:
@@ -78,6 +79,7 @@ class DbOnboardingPersister:
             jobs = ScheduledJobRepository(session)
             await jobs.ensure(user.id, JobType.NIGHTLY_GENERATION, generation_time)
             await jobs.ensure(user.id, JobType.SKIP_CHECK, _SKIP_CHECK_TIME)
+            await jobs.ensure(user.id, JobType.WEEKLY_SUMMARY, _SUMMARY_TIME)
 
             session.add(
                 Event(

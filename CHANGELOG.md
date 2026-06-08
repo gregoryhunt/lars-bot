@@ -5,6 +5,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (M12 — weekly/monthly summaries)
+- `SummaryService` compiles a period's stats (workouts completed/skipped/missed,
+  weight latest + change, average daily calories, current metrics) and has the
+  model phrase a short check-in (`summary` prompt).
+- Scheduled **weekly summary** job (Sunday evening, per-user local time) added as a
+  `weekly_summary` job type (enum migration), created at onboarding and rehydrated
+  into the JobQueue like the other jobs.
+- "Answer if asked" path: the `view_trends` intent routes to a summary node
+  (weekly by default, monthly when the message mentions a month).
+- Tests: stat aggregation over the window, adapter rendering, unknown-user, and
+  the view-trends routing (weekly vs monthly).
+
+### Note
+- A scheduled *monthly* summary is deferred (JobQueue has no native monthly
+  trigger); monthly summaries are available on demand ("how's my month?").
+
 ### Added (M11 — health metrics foundation)
 - `healthsciencecalculator` dependency and a `HealthMetricsService` computing BMI,
   BMR (Harris-Benedict), TDEE, and a goal-based daily calorie target from the

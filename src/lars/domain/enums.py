@@ -62,6 +62,7 @@ class JobType(StrEnum):
     NIGHTLY_GENERATION = "nightly_generation"
     SKIP_CHECK = "skip_check"
     GOAL_REVIEW = "goal_review"
+    WEEKLY_SUMMARY = "weekly_summary"
 
 
 class Intent(StrEnum):

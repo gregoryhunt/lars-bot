@@ -24,6 +24,7 @@ from lars.workflow.onboarding import (
 from lars.workflow.pulse import PulsePersister
 from lars.workflow.screenshots import ScreenshotPersister
 from lars.workflow.state import GraphState
+from lars.workflow.summary import SummaryProvider
 
 # Intents whose writes must be confirmed before persisting.
 CONFIRM_INTENTS = frozenset(
@@ -102,6 +103,7 @@ class WorkflowNodes:
         screenshot_persister: ScreenshotPersister | None = None,
         pulse_persister: PulsePersister | None = None,
         nutrition_logger: NutritionLogger | None = None,
+        summary_provider: SummaryProvider | None = None,
     ) -> None:
         self._adapter = adapter
         self._registry = registry
@@ -110,6 +112,7 @@ class WorkflowNodes:
         self._screenshot_persister = screenshot_persister
         self._pulse_persister = pulse_persister
         self._nutrition_logger = nutrition_logger
+        self._summary = summary_provider
 
     async def intake(self, state: GraphState) -> GraphState:
         # Read this turn's input from `incoming` (fresh turn) and reset transient
@@ -226,6 +229,13 @@ class WorkflowNodes:
         )
         return {"persisted": True, "response": summary}
 
+    async def summarize(self, state: GraphState) -> GraphState:
+        if self._summary is None:
+            raise RuntimeError("summaries require a summary_provider")
+        period_days = 30 if "month" in state.get("text", "").lower() else 7
+        text = await self._summary.summarize(state["telegram_id"], period_days)
+        return {"response": text}
+
     async def persist(self, state: GraphState) -> GraphState:
         # Placeholder write; real persistence lands in later milestones.
         return {"persisted": True}
@@ -265,6 +275,8 @@ def route_after_classify(state: GraphState) -> str:
         return "confirm_write"
     if intent == Intent.LOG_NUTRITION:
         return "log_nutrition"
+    if intent == Intent.VIEW_TRENDS:
+        return "summarize"
     return "respond"
 
 
