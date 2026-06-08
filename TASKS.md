@@ -117,6 +117,9 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
 - [x] Always-send-but-brief, scope-aware prompt; weekly stays light, block does the level-set.
 - [x] Tests: first review is block + schedules next; weekly doesn't move the block date.
 
-### M14 — Dynamic activity level (planned)
-- [ ] Adjust activity level from workouts logged during the week.
-- [ ] End-of-day / next-morning follow-up about untracked activity (walks, yardwork).
+### M14 — Dynamic activity level
+- [x] Derive effective activity level from completed workouts (+ untracked) and
+      refresh `profile.activity_level` during the weekly review (so TDEE adapts).
+- [x] Daily next-morning follow-up (`activity_check` job) asking about untracked
+      activity (walk/yardwork) via inline buttons; recorded and fed into derivation.
+- [x] Tests: derivation mapping, refresh-from-workouts, and untracked bump.

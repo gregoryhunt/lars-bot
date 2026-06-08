@@ -63,6 +63,7 @@ class JobType(StrEnum):
     SKIP_CHECK = "skip_check"
     GOAL_REVIEW = "goal_review"
     WEEKLY_SUMMARY = "weekly_summary"
+    ACTIVITY_CHECK = "activity_check"
 
 
 class Intent(StrEnum):

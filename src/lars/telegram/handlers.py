@@ -12,7 +12,7 @@ from telegram.ext import ContextTypes
 
 from lars.adapters.llm import Image
 from lars.config import Settings
-from lars.scheduler.jobs import ensure_user_jobs
+from lars.scheduler.jobs import ACTIVITY_CALLBACK_PREFIX, ACTIVITY_KEY, ensure_user_jobs
 from lars.services.screenshots import process_photo
 from lars.workflow import run_turn
 from lars.workflow.runner import TurnReply
@@ -105,11 +105,25 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return
     user = update.effective_user
     chat = update.effective_chat
+    if query is None or user is None or chat is None:
+        return
+
+    # Untracked-activity follow-up buttons are handled directly (not via the graph).
+    data = query.data or ""
+    if data.startswith(ACTIVITY_CALLBACK_PREFIX):
+        activity = context.bot_data.get(ACTIVITY_KEY)
+        if activity is not None:
+            await activity.record_untracked(user.id, data[len(ACTIVITY_CALLBACK_PREFIX) :])
+        await context.bot.send_message(
+            chat_id=chat.id, text="Got it — thanks! I'll factor that in. 💪"
+        )
+        return
+
     graph = context.bot_data.get(GRAPH_KEY)
-    if graph is None or query is None or user is None or chat is None:
+    if graph is None:
         return
     config = {"configurable": {"thread_id": str(user.id)}}
-    reply = await run_turn(graph, config, telegram_id=user.id, text=query.data or "")
+    reply = await run_turn(graph, config, telegram_id=user.id, text=data)
     await context.bot.send_message(
         chat_id=chat.id, text=reply or "👍", reply_markup=_markup(reply)
     )

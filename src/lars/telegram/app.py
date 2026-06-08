@@ -23,6 +23,7 @@ from lars.persistence import create_engine, create_sessionmaker
 from lars.prompts import PromptRegistry
 from lars.scheduler.clock import SystemClock
 from lars.scheduler.jobs import (
+    ACTIVITY_KEY,
     GENERATOR_KEY,
     SCHEDULER_KEY,
     SESSIONMAKER_KEY,
@@ -30,6 +31,7 @@ from lars.scheduler.jobs import (
     rehydrate_jobs,
 )
 from lars.scheduler.service import SchedulingService
+from lars.services.activity import ActivityService
 from lars.services.generation import WorkoutGenerator
 from lars.services.metrics import HealthMetricsService
 from lars.services.nutrition import NutritionService
@@ -91,6 +93,7 @@ async def _post_init(app: Application) -> None:
     app.bot_data[SESSIONMAKER_KEY] = sessionmaker
     app.bot_data[SCHEDULER_KEY] = SchedulingService(sessionmaker, clock)
     app.bot_data[SUMMARY_KEY] = summary
+    app.bot_data[ACTIVITY_KEY] = ActivityService(sessionmaker, clock)
     app.bot_data[GENERATOR_KEY] = WorkoutGenerator(
         sessionmaker, adapter, registry, clock, metrics_service
     )

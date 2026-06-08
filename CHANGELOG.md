@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (M14 — dynamic activity level)
+- `ActivityService` derives an effective activity level from completed workouts in
+  the last week (bumped by reported untracked activity) and refreshes
+  `profile.activity_level` during the weekly review, so TDEE adapts to reality.
+- Daily next-morning follow-up (`activity_check` job type) asking about untracked
+  activity (walk, yardwork, on-your-feet) via inline buttons; the tap is recorded
+  as an `untracked_activity` event and feeds the derivation. Created at onboarding.
+- Callback routing: `actq:` buttons are handled directly (outside the graph).
+- Tests: derivation mapping, refresh-from-workouts, and the untracked-activity bump.
+
 ### Changed (M13 — adaptive review: weekly check-in + block level-set)
 - The recurring check-in is now one mechanism with two depths: a light **weekly**
   review most weeks (inputs logged, wins, misses that matter), and a deep **block**

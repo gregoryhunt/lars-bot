@@ -17,7 +17,9 @@ night before a scheduled training day.
 > with a Postgres checkpointer, and a JobQueue scheduler. Lars also runs an **adaptive
 > review**: a light weekly check-in most weeks and a deeper **block review** (weight/
 > goal/program level-set) every ~4–6 weeks, scheduled adaptively — and answers
-> "how's my week/month?" on demand. Planned next: dynamic activity-level tracking.
+> "how's my week/month?" on demand. Activity level is **dynamic**: Lars adapts it
+> from the week's logged workouts and a daily follow-up about untracked activity
+> (walks, yardwork), so calorie/TDEE targets track reality.
 
 ## What Lars does
 

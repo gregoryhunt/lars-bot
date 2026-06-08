@@ -11,6 +11,7 @@ from datetime import time
 from typing import Any, cast
 from zoneinfo import ZoneInfo
 
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, ContextTypes
 
 from lars.domain.enums import JobType
@@ -24,9 +25,23 @@ SCHEDULER_KEY = "scheduler"
 SESSIONMAKER_KEY = "sessionmaker"
 GENERATOR_KEY = "generator"
 SUMMARY_KEY = "summary"
+ACTIVITY_KEY = "activity"
+# callback_data prefix for the untracked-activity follow-up buttons
+ACTIVITY_CALLBACK_PREFIX = "actq:"
 
 _DEFAULT_TIME = time(20, 0)
 _SUNDAY = (6,)  # python-telegram-bot run_daily: 0=Mon … 6=Sun
+
+_ACTIVITY_KEYBOARD = InlineKeyboardMarkup(
+    [
+        [
+            InlineKeyboardButton("None", callback_data=f"{ACTIVITY_CALLBACK_PREFIX}none"),
+            InlineKeyboardButton("Light", callback_data=f"{ACTIVITY_CALLBACK_PREFIX}light"),
+            InlineKeyboardButton("Moderate", callback_data=f"{ACTIVITY_CALLBACK_PREFIX}moderate"),
+            InlineKeyboardButton("Heavy", callback_data=f"{ACTIVITY_CALLBACK_PREFIX}heavy"),
+        ]
+    ]
+)
 
 
 def _job_name(prefix: str, telegram_id: int) -> str:
@@ -92,13 +107,30 @@ async def _skip_check_job(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def _review_job(context: ContextTypes.DEFAULT_TYPE) -> None:
+    activity = context.application.bot_data[ACTIVITY_KEY]
     summary = context.application.bot_data[SUMMARY_KEY]
     data = _job_data(context)
     if data is None:
         return
+    # Adjust the activity level from the week's logged workouts before reviewing.
+    await activity.refresh_profile(data["telegram_id"])
     # The recurring check-in: weekly (light) most weeks, block (deep) every ~4-6.
     text = await summary.scheduled_review(data["telegram_id"])
     await context.bot.send_message(chat_id=data["telegram_id"], text=text)
+
+
+async def _activity_check_job(context: ContextTypes.DEFAULT_TYPE) -> None:
+    data = _job_data(context)
+    if data is None:
+        return
+    await context.bot.send_message(
+        chat_id=data["telegram_id"],
+        text=(
+            "Morning! Any extra activity yesterday outside your workout — "
+            "a walk, yardwork, time on your feet?"
+        ),
+        reply_markup=_ACTIVITY_KEYBOARD,
+    )
 
 
 # job_type -> (name prefix, callback, days-of-week or None for every day)
@@ -106,6 +138,7 @@ _CALLBACKS = {
     JobType.NIGHTLY_GENERATION: ("nightly", _nightly_job, None),
     JobType.SKIP_CHECK: ("skip", _skip_check_job, None),
     JobType.WEEKLY_SUMMARY: ("summary", _review_job, _SUNDAY),
+    JobType.ACTIVITY_CHECK: ("activity", _activity_check_job, None),
 }
 
 
