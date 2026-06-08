@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from lars.adapters.llm import MockModelAdapter
 from lars.domain.enums import CompletionSource, SessionStatus
 from lars.persistence.models import (
+    Event,
     GeneratedWorkout,
     PlannedSession,
     PulseCheck,
@@ -85,8 +86,16 @@ async def test_generate_persists_valid_prescription(
             )
         ).scalar_one()
         planned = await session.get(PlannedSession, planned_id)
+        events = (
+            await session.execute(
+                select(Event).where(
+                    Event.user_id == user_id, Event.event_type == "workout_generated"
+                )
+            )
+        ).scalars().all()
     assert workout.regenerated_count == 0
     assert planned is not None and planned.status is SessionStatus.GENERATED
+    assert len(events) == 1  # audit event emitted
 
 
 async def test_progress_when_no_history(

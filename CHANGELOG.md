@@ -5,6 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (M10 — audit trail & operational hardening)
+- `retry_async` helper (exponential backoff, injectable sleep) and a
+  `RetryingModelAdapter` wrapping the Claude adapter; Open Food Facts lookups also
+  retry transient HTTP errors.
+- Nightly generation failures are caught, surfaced to the user conversationally,
+  and recorded as a `nightly_gen_failed` audit event.
+- A global Telegram error handler logs the exception and notifies the user, so a
+  single failed update can't crash the bot.
+- Tests: retry-then-succeed / exhaustion, the retrying adapter, nightly-failure
+  surfacing + audit event, the error handler, and an explicit audit-event check.
+
 ### Added (M9 — nutrition logging)
 - Open Food Facts adapter (`OpenFoodFactsClient.by_barcode` → calories + macros,
   per serving with a 100g fallback).

@@ -1,10 +1,12 @@
 """Open Food Facts adapter: resolve a barcode to nutrition facts."""
 
+import asyncio
 from typing import Any, Protocol
 
 import httpx
 
 from lars.domain.models import NutritionFacts
+from lars.retry import Sleep, retry_async
 
 _BASE_URL = "https://world.openfoodfacts.org"
 _FIELDS = "product_name,nutriments,serving_size"
@@ -17,14 +19,27 @@ class NutritionLookup(Protocol):
 class OpenFoodFactsClient:
     """Thin client over the Open Food Facts product API."""
 
-    def __init__(self, client: httpx.AsyncClient, base_url: str = _BASE_URL) -> None:
+    def __init__(
+        self,
+        client: httpx.AsyncClient,
+        base_url: str = _BASE_URL,
+        *,
+        attempts: int = 3,
+        sleep: Sleep = asyncio.sleep,
+    ) -> None:
         self._client = client
         self._base_url = base_url
+        self._attempts = attempts
+        self._sleep = sleep
 
     async def by_barcode(self, barcode: str) -> NutritionFacts | None:
+        url = f"{self._base_url}/api/v2/product/{barcode}.json"
         try:
-            response = await self._client.get(
-                f"{self._base_url}/api/v2/product/{barcode}.json", params={"fields": _FIELDS}
+            response = await retry_async(
+                lambda: self._client.get(url, params={"fields": _FIELDS}),
+                attempts=self._attempts,
+                exceptions=(httpx.HTTPError,),
+                sleep=self._sleep,
             )
         except httpx.HTTPError:
             return None

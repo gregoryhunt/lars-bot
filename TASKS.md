@@ -90,9 +90,9 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
       back to estimate; daily totals correct.
 
 ## M10 — Audit trail + hardening
-- [ ] Events/audit table + emit on important actions.
-- [ ] Retry/backoff wrapper for LLM + OFF calls.
-- [ ] Nightly-gen failure surfaced to user conversationally.
-- [ ] Global error handling so no handler crash kills the bot.
-- [ ] Test: audit events emitted; injected failures retry then surface message;
+- [x] Events/audit table + emit on important actions.
+- [x] Retry/backoff wrapper for LLM + OFF calls.
+- [x] Nightly-gen failure surfaced to user conversationally.
+- [x] Global error handling so no handler crash kills the bot.
+- [x] Test: audit events emitted; injected failures retry then surface message;
       handler exception is caught and reported.

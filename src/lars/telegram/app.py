@@ -5,8 +5,16 @@ from typing import Any
 
 import httpx
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from telegram.ext import Application, CallbackQueryHandler, MessageHandler, filters
+from telegram import Update
+from telegram.ext import (
+    Application,
+    CallbackQueryHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
+from lars.adapters.llm import RetryingModelAdapter
 from lars.adapters.llm.anthropic import AnthropicAdapter
 from lars.adapters.nutrition import OpenFoodFactsClient
 from lars.config import Settings, get_settings
@@ -54,7 +62,9 @@ async def _post_init(app: Application) -> None:
     saver = await saver_cm.__aenter__()
     await saver.setup()
 
-    adapter = AnthropicAdapter(settings.anthropic_api_key, settings.anthropic_model)
+    adapter = RetryingModelAdapter(
+        AnthropicAdapter(settings.anthropic_api_key, settings.anthropic_model)
+    )
     registry = PromptRegistry()
     clock = SystemClock()
     http_client = httpx.AsyncClient(timeout=10.0)
@@ -81,6 +91,17 @@ async def _post_init(app: Application) -> None:
 
     await rehydrate_jobs(app)
     logger.info("workflow graph ready")
+
+
+async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Global handler so a single failed update can't crash the bot."""
+    logger.exception("unhandled error while processing an update", exc_info=context.error)
+    message = getattr(update, "effective_message", None) if isinstance(update, Update) else None
+    if message is not None:
+        try:
+            await message.reply_text("Sorry — something went wrong on my end. Please try again.")
+        except Exception:
+            logger.exception("failed to notify the user about an error")
 
 
 async def _post_shutdown(app: Application) -> None:
@@ -110,6 +131,7 @@ def build_application(settings: Settings) -> Application:
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.TEXT, handle_text))
     app.add_handler(CallbackQueryHandler(handle_callback))
+    app.add_error_handler(on_error)
     return app
 
 

@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 from telegram.ext import Application, ContextTypes
 
 from lars.domain.enums import JobType
+from lars.persistence.models import Event
 from lars.persistence.repositories import JobWithUser, ScheduledJobRepository
 from lars.services.generation import format_prescription
 
@@ -42,14 +43,34 @@ async def _nightly_job(context: ContextTypes.DEFAULT_TYPE) -> None:
     data = _job_data(context)
     if data is None:
         return
-    planned = await service.generate_for_tomorrow(uuid.UUID(data["user_id"]))
+    user_id = uuid.UUID(data["user_id"])
+    planned = await service.generate_for_tomorrow(user_id)
     if planned is None:
         return
-    result = await generator.generate(planned.id)
+    try:
+        result = await generator.generate(planned.id)
+    except Exception:
+        logger.exception("nightly generation failed for user %s", user_id)
+        await _surface_failure(context, user_id, data["telegram_id"])
+        return
     if result is not None:
         await context.bot.send_message(
             chat_id=data["telegram_id"], text=format_prescription(result.prescription)
         )
+
+
+async def _surface_failure(
+    context: ContextTypes.DEFAULT_TYPE, user_id: uuid.UUID, telegram_id: int
+) -> None:
+    sessionmaker = context.application.bot_data.get(SESSIONMAKER_KEY)
+    if sessionmaker is not None:
+        async with sessionmaker() as session:
+            session.add(Event(user_id=user_id, event_type="nightly_gen_failed", payload={}))
+            await session.commit()
+    await context.bot.send_message(
+        chat_id=telegram_id,
+        text="I hit a snag building tomorrow's workout — I'll try again shortly.",
+    )
 
 
 async def _skip_check_job(context: ContextTypes.DEFAULT_TYPE) -> None:
