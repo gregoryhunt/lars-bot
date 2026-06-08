@@ -91,12 +91,13 @@ async def _skip_check_job(context: ContextTypes.DEFAULT_TYPE) -> None:
         )
 
 
-async def _weekly_summary_job(context: ContextTypes.DEFAULT_TYPE) -> None:
+async def _review_job(context: ContextTypes.DEFAULT_TYPE) -> None:
     summary = context.application.bot_data[SUMMARY_KEY]
     data = _job_data(context)
     if data is None:
         return
-    text = await summary.summarize(data["telegram_id"], 7)
+    # The recurring check-in: weekly (light) most weeks, block (deep) every ~4-6.
+    text = await summary.scheduled_review(data["telegram_id"])
     await context.bot.send_message(chat_id=data["telegram_id"], text=text)
 
 
@@ -104,7 +105,7 @@ async def _weekly_summary_job(context: ContextTypes.DEFAULT_TYPE) -> None:
 _CALLBACKS = {
     JobType.NIGHTLY_GENERATION: ("nightly", _nightly_job, None),
     JobType.SKIP_CHECK: ("skip", _skip_check_job, None),
-    JobType.WEEKLY_SUMMARY: ("summary", _weekly_summary_job, _SUNDAY),
+    JobType.WEEKLY_SUMMARY: ("summary", _review_job, _SUNDAY),
 }
 
 

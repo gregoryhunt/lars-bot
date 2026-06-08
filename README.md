@@ -14,9 +14,10 @@ night before a scheduled training day.
 > **BMI/BMR/TDEE and a calorie target** (via `healthsciencecalculator`) from the
 > user's profile and weight, feeding them into workout generation. Built on Postgres
 > + Alembic, a Telegram interface (text, photo, inline buttons), a LangGraph workflow
-> with a Postgres checkpointer, and a JobQueue scheduler. Lars also sends a **weekly
-> summary** (and answers "how's my week/month?" on demand) compiled from workouts,
-> weight, nutrition, and metrics. Planned next: dynamic activity-level tracking.
+> with a Postgres checkpointer, and a JobQueue scheduler. Lars also runs an **adaptive
+> review**: a light weekly check-in most weeks and a deeper **block review** (weight/
+> goal/program level-set) every ~4–6 weeks, scheduled adaptively — and answers
+> "how's my week/month?" on demand. Planned next: dynamic activity-level tracking.
 
 ## What Lars does
 

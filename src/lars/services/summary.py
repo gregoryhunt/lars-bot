@@ -41,6 +41,39 @@ def _period_label(period_days: int) -> str:
     return {7: "week", 30: "month"}.get(period_days, f"{period_days} days")
 
 
+def _stat_kwargs(stats: "SummaryStats") -> dict[str, object]:
+    m = stats.metrics
+    metrics_text = (
+        f"BMI {m.bmi} ({m.bmi_category}), TDEE ~{round(m.tdee)} cal, "
+        f"calorie target ~{round(m.calorie_target)} cal"
+        if m is not None
+        else "unknown"
+    )
+    return {
+        "completed": stats.workouts_completed,
+        "skipped": stats.workouts_skipped,
+        "missed": stats.workouts_missed,
+        "weight_latest": _fmt(stats.weight_latest, "kg"),
+        "weight_change": _fmt(stats.weight_change, "kg", signed=True),
+        "avg_calories": _fmt(stats.avg_daily_calories, "cal"),
+        "metrics": metrics_text,
+    }
+
+
+_BLOCK_WINDOW_DAYS = 28
+
+
+def _next_interval_weeks(stats: "SummaryStats") -> int:
+    """Lars decides how soon to run the next block review (4-6 weeks)."""
+    attended = stats.workouts_completed
+    missed = stats.workouts_skipped + stats.workouts_missed
+    if missed > attended:
+        return 4  # struggling — check back sooner
+    if missed == 0 and attended > 0:
+        return 6  # steady — give the block room to breathe
+    return 5
+
+
 class SummaryService:
     def __init__(
         self,
@@ -120,22 +153,36 @@ class SummaryService:
         stats = await self.build_stats(telegram_id, period_days)
         if stats is None:
             return _NO_USER
-        m = stats.metrics
-        metrics_text = (
-            f"BMI {m.bmi} ({m.bmi_category}), TDEE ~{round(m.tdee)} cal, "
-            f"calorie target ~{round(m.calorie_target)} cal"
-            if m is not None
-            else "unknown"
-        )
-        prompt = self._registry.render(
-            "summary",
-            period=_period_label(period_days),
-            completed=stats.workouts_completed,
-            skipped=stats.workouts_skipped,
-            missed=stats.workouts_missed,
-            weight_latest=_fmt(stats.weight_latest, "kg"),
-            weight_change=_fmt(stats.weight_change, "kg", signed=True),
-            avg_calories=_fmt(stats.avg_daily_calories, "cal"),
-            metrics=metrics_text,
-        )
-        return await self._adapter.generate(prompt)
+        values = {"period": _period_label(period_days), **_stat_kwargs(stats)}
+        return await self._adapter.generate(self._registry.render_map("summary", values))
+
+    async def scheduled_review(self, telegram_id: int) -> str:
+        """Run the recurring check-in: weekly (light) or block (deep level-set).
+
+        Most weeks this is the light weekly check-in; every ~4-6 weeks it becomes a
+        deeper block review, after which Lars schedules the next block date.
+        """
+        async with self._sessionmaker() as session:
+            user = await UserRepository(session).get_by_telegram_id(telegram_id)
+            if user is None:
+                return _NO_USER
+            today = self._clock.now().astimezone(ZoneInfo(user.timezone)).date()
+            due = user.next_block_review_on is None or today >= user.next_block_review_on
+            scope = "block" if due else "weekly"
+
+        window_days = _BLOCK_WINDOW_DAYS if scope == "block" else 7
+        stats = await self.build_stats(telegram_id, window_days)
+        if stats is None:
+            return _NO_USER
+
+        values = {"scope": scope, "window_days": window_days, **_stat_kwargs(stats)}
+        text = await self._adapter.generate(self._registry.render_map("review", values))
+
+        if scope == "block":
+            next_on = today + timedelta(weeks=_next_interval_weeks(stats))
+            async with self._sessionmaker() as session:
+                user = await UserRepository(session).get_by_telegram_id(telegram_id)
+                if user is not None:
+                    user.next_block_review_on = next_on
+                    await session.commit()
+        return text

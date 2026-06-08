@@ -20,3 +20,7 @@ class PromptRegistry:
     def render(self, key: str, *, version: str = "v1", **values: object) -> str:
         """Return the template with ``{placeholders}`` substituted."""
         return self.get(key, version).format(**values)
+
+    def render_map(self, key: str, values: dict[str, object], *, version: str = "v1") -> str:
+        """Like ``render`` but takes a values mapping (handy for computed kwargs)."""
+        return self.get(key, version).format(**values)

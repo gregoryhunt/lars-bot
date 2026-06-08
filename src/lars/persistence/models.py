@@ -48,6 +48,8 @@ class User(IdTimestampBase):
     status: Mapped[UserStatus] = mapped_column(
         SAEnum(UserStatus, name="user_status"), default=UserStatus.ONBOARDING
     )
+    # When the next deep "block" review is due; None means one is due now.
+    next_block_review_on: Mapped[date | None] = mapped_column(Date)
 
     profile: Mapped["Profile | None"] = relationship(
         back_populates="user", uselist=False, cascade="all, delete-orphan"

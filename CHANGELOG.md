@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed (M13 — adaptive review: weekly check-in + block level-set)
+- The recurring check-in is now one mechanism with two depths: a light **weekly**
+  review most weeks (inputs logged, wins, misses that matter), and a deep **block**
+  review every ~4-6 weeks (weight/goal/program level-set + at most one adjustment).
+- Lars schedules the next block date adaptively (`users.next_block_review_on`,
+  migration) — sooner when the user is struggling, later when steady.
+- Reviews always send but stay brief, via a scope-aware `review` prompt; the
+  scheduled job calls `SummaryService.scheduled_review` (on-demand `view_trends`
+  still uses the period-based summary).
+- Tests: first review is a block review that schedules the next; weekly reviews
+  don't move the block date.
+
 ### Added (M12 — weekly/monthly summaries)
 - `SummaryService` compiles a period's stats (workouts completed/skipped/missed,
   weight latest + change, average daily calories, current metrics) and has the

@@ -108,11 +108,15 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
 
 ### M12 — Weekly/monthly summaries
 - [x] `SummaryService` compiling workouts/weight/nutrition + metrics over a window.
-- [x] Scheduled weekly summary job (Sunday evening), persisted + rehydrated.
+- [x] Scheduled review job (Sunday evening), persisted + rehydrated.
 - [x] "Answer if asked" path: `view_trends` intent → summary (weekly, or monthly by keyword).
-- [ ] Scheduled *monthly* summary (deferred — JobQueue has no native monthly trigger;
-      monthly is available on demand via "how's my month").
 
-### M13 — Dynamic activity level (planned)
+### M13 — Adaptive review (weekly check-in + block level-set)
+- [x] One recurring check-in: light **weekly** most weeks, deep **block** review every ~4-6.
+- [x] Lars picks the next block date adaptively (`next_block_review_on`, migration).
+- [x] Always-send-but-brief, scope-aware prompt; weekly stays light, block does the level-set.
+- [x] Tests: first review is block + schedules next; weekly doesn't move the block date.
+
+### M14 — Dynamic activity level (planned)
 - [ ] Adjust activity level from workouts logged during the week.
 - [ ] End-of-day / next-morning follow-up about untracked activity (walks, yardwork).
