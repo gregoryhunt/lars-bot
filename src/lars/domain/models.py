@@ -10,7 +10,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from lars.domain.enums import ExperienceLevel, GoalType
+from lars.domain.enums import ActivityLevel, ExperienceLevel, GoalType
 
 
 class ScreenshotExtraction(BaseModel):
@@ -85,7 +85,9 @@ class OnboardingResult(BaseModel):
     age: int | None = None
     sex: str | None = None
     height_cm: float | None = None
+    weight_kg: float | None = None  # current weight, stored as an initial body metric
     experience_level: ExperienceLevel | None = None
+    activity_level: ActivityLevel | None = None
     equipment_access: list[str] = Field(default_factory=list)
     goal_type: GoalType
     target_weight_kg: float | None = None

@@ -6,13 +6,16 @@ A personal-coach Telegram bot for a small, fixed group of users that tracks
 workouts, body weight, and nutrition, and generates each user's next workout the
 night before a scheduled training day.
 
-> **Status: MVP complete (M0–M10).** Lars onboards users, ingests screenshots,
-> generates and delivers the night-before workout, runs a post-workout pulse check,
-> logs nutrition (LLM estimate / Open Food Facts / label photo) with daily totals,
-> proactively flags missed sessions, keeps an audit trail, and is hardened with
-> retry/backoff, conversational failure surfacing, and a global error handler.
-> Built on Postgres + Alembic, a Telegram interface (text, photo, inline buttons),
-> a LangGraph workflow with a Postgres checkpointer, and a JobQueue scheduler.
+> **Status: MVP complete (M0–M10), plus health metrics (M11).** Lars onboards users,
+> ingests screenshots, generates and delivers the night-before workout, runs a
+> post-workout pulse check, logs nutrition (LLM estimate / Open Food Facts / label
+> photo) with daily totals, proactively flags missed sessions, keeps an audit trail,
+> and is hardened with retry/backoff and a global error handler. It now also computes
+> **BMI/BMR/TDEE and a calorie target** (via `healthsciencecalculator`) from the
+> user's profile and weight, feeding them into workout generation. Built on Postgres
+> + Alembic, a Telegram interface (text, photo, inline buttons), a LangGraph workflow
+> with a Postgres checkpointer, and a JobQueue scheduler. Planned next: weekly/monthly
+> summaries and dynamic activity-level tracking.
 
 ## What Lars does
 

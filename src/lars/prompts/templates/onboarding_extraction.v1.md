@@ -7,7 +7,10 @@ Required JSON keys:
 - age: integer or null.
 - sex: string or null — as the user described it.
 - height_cm: number or null — convert any height (e.g. feet/inches) to centimeters.
+- weight_kg: number or null — the user's current body weight, converting pounds to kilograms.
 - experience_level: one of beginner, intermediate, advanced, or null.
+- activity_level: one of "sedentary", "lightly active", "moderately active",
+  "very active", "extra active", or null — daily activity outside workouts.
 - equipment_access: array of short strings (e.g. "full gym", "dumbbells", "home").
 - goal_type: one of cut, bulk, maintain, recomp. Map "lose fat" to cut and
   "build muscle" to bulk.

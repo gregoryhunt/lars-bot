@@ -30,6 +30,7 @@ from lars.scheduler.jobs import (
 )
 from lars.scheduler.service import SchedulingService
 from lars.services.generation import WorkoutGenerator
+from lars.services.metrics import HealthMetricsService
 from lars.services.nutrition import NutritionService
 from lars.services.onboarding import DbOnboardingPersister
 from lars.services.pulse import DbPulsePersister
@@ -84,7 +85,10 @@ async def _post_init(app: Application) -> None:
     app.bot_data[EXTRACTOR_KEY] = ScreenshotExtractor(adapter, registry)
     app.bot_data[SESSIONMAKER_KEY] = sessionmaker
     app.bot_data[SCHEDULER_KEY] = SchedulingService(sessionmaker, clock)
-    app.bot_data[GENERATOR_KEY] = WorkoutGenerator(sessionmaker, adapter, registry, clock)
+    metrics_service = HealthMetricsService(sessionmaker)
+    app.bot_data[GENERATOR_KEY] = WorkoutGenerator(
+        sessionmaker, adapter, registry, clock, metrics_service
+    )
     app.bot_data[_SAVER_CM_KEY] = saver_cm
     app.bot_data[_ENGINE_KEY] = engine
     app.bot_data[_HTTP_KEY] = http_client

@@ -96,3 +96,20 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
 - [x] Global error handling so no handler crash kills the bot.
 - [x] Test: audit events emitted; injected failures retry then surface message;
       handler exception is caught and reported.
+
+## Post-MVP
+
+### M11 — Health metrics foundation
+- [x] Add healthsciencecalculator; `ActivityLevel` enum + `profiles.activity_level` (migration).
+- [x] Capture activity level + current weight in onboarding (current weight → initial body metric).
+- [x] `HealthMetricsService` (BMI/BMR/TDEE + goal-based calorie target) from profile + latest weight.
+- [x] Feed metrics into workout-generation context.
+- [x] Tests: metrics compute / None without weight; onboarding persists activity + initial weight.
+
+### M12 — Weekly/monthly summaries (planned)
+- [ ] Scheduled summary job(s) compiling workouts/weight/nutrition + metrics into a Lars message.
+- [ ] "Answer if asked" path so Lars can report metrics/progress on request.
+
+### M13 — Dynamic activity level (planned)
+- [ ] Adjust activity level from workouts logged during the week.
+- [ ] End-of-day / next-morning follow-up about untracked activity (walks, yardwork).

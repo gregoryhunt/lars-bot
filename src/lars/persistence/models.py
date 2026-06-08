@@ -25,6 +25,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from lars.domain.enums import (
+    ActivityLevel,
     BodyMetricSource,
     CompletionSource,
     ExperienceLevel,
@@ -82,6 +83,9 @@ class Profile(IdTimestampBase):
     height_cm: Mapped[float | None] = mapped_column(Numeric(5, 1))
     experience_level: Mapped[ExperienceLevel | None] = mapped_column(
         SAEnum(ExperienceLevel, name="experience_level")
+    )
+    activity_level: Mapped[ActivityLevel | None] = mapped_column(
+        SAEnum(ActivityLevel, name="activity_level")
     )
     equipment_access: Mapped[dict | None] = mapped_column(JSONB)
     notes: Mapped[str | None] = mapped_column(Text)

@@ -7,8 +7,8 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from lars.adapters.llm import MockModelAdapter
-from lars.domain.enums import ExperienceLevel, GoalType, UserStatus
-from lars.persistence.repositories import UserRepository
+from lars.domain.enums import ActivityLevel, ExperienceLevel, GoalType, UserStatus
+from lars.persistence.repositories import BodyMetricRepository, UserRepository
 from lars.prompts import PromptRegistry
 from lars.services.onboarding import DbOnboardingPersister
 from lars.workflow import DbContextLoader, build_graph, run_turn
@@ -24,7 +24,9 @@ ONBOARDING_JSON = json.dumps(
         "age": 34,
         "sex": "male",
         "height_cm": 180.3,
+        "weight_kg": 82.0,
         "experience_level": "intermediate",
+        "activity_level": "moderately active",
         "equipment_access": ["full gym"],
         "goal_type": "cut",
         "target_weight_kg": 80.0,
@@ -39,6 +41,8 @@ ANSWERS = [
     "Greg",
     "34, male",
     "5'11\"",
+    "180 lb",
+    "moderately active",
     "lose fat",
     "intermediate",
     "push mon, pull wed, legs fri",
@@ -79,13 +83,18 @@ async def test_onboarding_persists_and_then_routes_normally(
     # The user aggregate was persisted and marked active.
     async with sessions() as session:
         user = await UserRepository(session).get_by_telegram_id(TELEGRAM_ID)
-    assert user is not None
+        assert user is not None
+        metrics = await BodyMetricRepository(session).list_for_user(user.id)
     assert user.status is UserStatus.ACTIVE
     assert user.timezone == "America/New_York"
     assert user.profile is not None
     assert user.profile.experience_level is ExperienceLevel.INTERMEDIATE
+    assert user.profile.activity_level is ActivityLevel.MODERATELY_ACTIVE
     assert len(user.goals) == 1
     assert user.goals[0].type is GoalType.CUT
+    # Onboarding's current weight became an initial body-metric reading.
+    assert len(metrics) == 1
+    assert float(metrics[0].weight_kg) == 82.0
 
     # No longer a new user, and a fresh turn routes to classify (not onboarding).
     assert await loader.is_new_user(TELEGRAM_ID) is False

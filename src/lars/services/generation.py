@@ -26,6 +26,7 @@ from lars.persistence.models import (
 )
 from lars.prompts import PromptRegistry
 from lars.scheduler.clock import Clock
+from lars.services.metrics import HealthMetricsService
 
 _DONE_STATES = (SessionStatus.COMPLETED, SessionStatus.SKIPPED, SessionStatus.MISSED)
 _PROMPT_VERSION = "v1"
@@ -71,11 +72,13 @@ class WorkoutGenerator:
         adapter: ModelAdapter,
         registry: PromptRegistry,
         clock: Clock,
+        metrics_service: HealthMetricsService | None = None,
     ) -> None:
         self._sessionmaker = sessionmaker
         self._adapter = adapter
         self._registry = registry
         self._clock = clock
+        self._metrics = metrics_service
 
     async def generate(
         self, planned_session_id: uuid.UUID, *, allow_regenerate: bool = False
@@ -220,6 +223,17 @@ class WorkoutGenerator:
         )
         equipment = profile.equipment_access if profile and profile.equipment_access else "unknown"
         goal = user.goals[0].type.value if user and user.goals else "unknown"
+
+        metrics_text = "unknown"
+        if self._metrics is not None:
+            metrics = await self._metrics.for_user(planned.user_id)
+            if metrics is not None:
+                metrics_text = (
+                    f"BMI {metrics.bmi} ({metrics.bmi_category}), "
+                    f"TDEE ~{round(metrics.tdee)} cal, "
+                    f"calorie target ~{round(metrics.calorie_target)} cal/day"
+                )
+
         prompt = self._registry.render(
             "workout_generation",
             split=planned.split_label,
@@ -227,6 +241,7 @@ class WorkoutGenerator:
             experience=experience,
             equipment=equipment,
             goal=goal,
+            metrics=metrics_text,
             last_workout=last_workout,
             feedback=feedback,
         )

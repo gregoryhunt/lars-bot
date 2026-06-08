@@ -8,6 +8,7 @@ Progression directive: {progression}
 User experience: {experience}
 Available equipment: {equipment}
 Goal: {goal}
+Health metrics: {metrics}
 Last session's workout (for reference): {last_workout}
 Recent feedback: {feedback}
 

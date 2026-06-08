@@ -53,6 +53,12 @@ _ONBOARDING_QUESTIONS: list[tuple[str, str]] = [
         "(for training and nutrition math)?",
     ),
     ("height", "How tall are you? (e.g. 5'11\" or 180 cm)"),
+    ("weight", "And what do you weigh right now? (e.g. 180 lb or 82 kg)"),
+    (
+        "activity",
+        "Outside of workouts, how active is your typical day — sedentary, lightly "
+        "active, moderately active, very active, or extra active?",
+    ),
     (
         "goal",
         "What's your main goal — lose fat, build muscle, maintain, or recomp? "

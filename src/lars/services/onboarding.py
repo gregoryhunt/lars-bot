@@ -4,9 +4,16 @@ from datetime import UTC, datetime, time
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from lars.domain.enums import JobType, UserStatus
+from lars.domain.enums import BodyMetricSource, JobType, UserStatus
 from lars.domain.models import OnboardingResult
-from lars.persistence.models import Event, Goal, Profile, User, WorkoutSchedule
+from lars.persistence.models import (
+    BodyMetric,
+    Event,
+    Goal,
+    Profile,
+    User,
+    WorkoutSchedule,
+)
 from lars.persistence.repositories import ScheduledJobRepository, UserRepository
 
 _SKIP_CHECK_TIME = time(21, 0)
@@ -40,8 +47,17 @@ class DbOnboardingPersister:
                 sex=result.sex,
                 height_cm=result.height_cm,
                 experience_level=result.experience_level,
+                activity_level=result.activity_level,
                 equipment_access={"items": result.equipment_access},
             )
+            if result.weight_kg is not None:
+                user.body_metrics = [
+                    BodyMetric(
+                        measured_at=datetime.now(UTC),
+                        weight_kg=result.weight_kg,
+                        source=BodyMetricSource.MANUAL,
+                    )
+                ]
             user.goals = [
                 Goal(
                     type=result.goal_type,

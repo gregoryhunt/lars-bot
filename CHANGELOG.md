@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (M11 — health metrics foundation)
+- `healthsciencecalculator` dependency and a `HealthMetricsService` computing BMI,
+  BMR (Harris-Benedict), TDEE, and a goal-based daily calorie target from the
+  user's profile and most recent weight.
+- `ActivityLevel` enum + `profiles.activity_level` column (migration); onboarding
+  now asks activity level and current weight, storing the weight as an initial
+  body-metric reading.
+- Workout generation now includes the user's metrics (BMI/TDEE/calorie target)
+  in its context.
+- Tests: metrics computation and the no-weight None case; onboarding persists
+  activity level and the initial weight.
+
 ### Added (CI)
 - GitHub Actions workflow (`.github/workflows/ci.yml`) running ruff, ty, and pytest
   on push/PR, with a Postgres service so the integration tests run (not skip).
