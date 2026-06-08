@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (CI)
+- GitHub Actions workflow (`.github/workflows/ci.yml`) running ruff, ty, and pytest
+  on push/PR, with a Postgres service so the integration tests run (not skip).
+
 ### Added (M10 — audit trail & operational hardening)
 - `retry_async` helper (exponential backoff, injectable sleep) and a
   `RetryingModelAdapter` wrapping the Claude adapter; Open Food Facts lookups also

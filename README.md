@@ -1,5 +1,7 @@
 # Lars Bot
 
+[![CI](https://github.com/gregoryhunt/lars-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/gregoryhunt/lars-bot/actions/workflows/ci.yml)
+
 A personal-coach Telegram bot for a small, fixed group of users that tracks
 workouts, body weight, and nutrition, and generates each user's next workout the
 night before a scheduled training day.
