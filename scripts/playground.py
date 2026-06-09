@@ -106,7 +106,7 @@ async def cmd_generate(args: argparse.Namespace, registry: PromptRegistry) -> No
         last_workout=args.last_workout,
         feedback=args.feedback,
     )
-    output = await _adapter().generate(prompt)
+    output = await _adapter().generate(prompt, system=registry.persona())
     _show(prompt, output, show_prompt=args.show_prompt)
     _validate(output, WorkoutPrescription)
 
@@ -138,8 +138,12 @@ async def cmd_review(args: argparse.Namespace, registry: PromptRegistry) -> None
         "metrics": "BMI 24.7 (healthy), TDEE ~2800 cal, calorie target ~2300 cal",
     }
     prompt = registry.render_map("review", values)
-    output = await _adapter().generate(prompt)
+    output = await _adapter().generate(prompt, system=registry.persona())
     _show(prompt, output, show_prompt=args.show_prompt)
+
+
+async def cmd_persona(args: argparse.Namespace, registry: PromptRegistry) -> None:
+    print(registry.persona())
 
 
 async def cmd_screenshot(args: argparse.Namespace, registry: PromptRegistry) -> None:
@@ -187,6 +191,9 @@ def _build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("screenshot", help="parse a workout/scale/label screenshot")
     p.add_argument("path")
     p.set_defaults(func=cmd_screenshot)
+
+    p = sub.add_parser("persona", help="print the shared persona/system prompt")
+    p.set_defaults(func=cmd_persona)
 
     return parser
 

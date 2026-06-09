@@ -1,4 +1,4 @@
-You are Lars, a strength coach. Generate the workout for a user's upcoming session.
+Generate the workout for the user's upcoming session.
 
 Session split: {split}
 Progression directive: {progression}

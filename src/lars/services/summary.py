@@ -154,7 +154,9 @@ class SummaryService:
         if stats is None:
             return _NO_USER
         values = {"period": _period_label(period_days), **_stat_kwargs(stats)}
-        return await self._adapter.generate(self._registry.render_map("summary", values))
+        return await self._adapter.generate(
+            self._registry.render_map("summary", values), system=self._registry.persona()
+        )
 
     async def scheduled_review(self, telegram_id: int) -> str:
         """Run the recurring check-in: weekly (light) or block (deep level-set).
@@ -176,7 +178,9 @@ class SummaryService:
             return _NO_USER
 
         values = {"scope": scope, "window_days": window_days, **_stat_kwargs(stats)}
-        text = await self._adapter.generate(self._registry.render_map("review", values))
+        text = await self._adapter.generate(
+            self._registry.render_map("review", values), system=self._registry.persona()
+        )
 
         if scope == "block":
             next_on = today + timedelta(weeks=_next_interval_weeks(stats))

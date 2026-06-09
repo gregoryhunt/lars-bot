@@ -245,5 +245,5 @@ class WorkoutGenerator:
             last_workout=last_workout,
             feedback=feedback,
         )
-        raw = await self._adapter.generate(prompt)
+        raw = await self._adapter.generate(prompt, system=self._registry.persona())
         return WorkoutPrescription.model_validate(json.loads(_strip_fences(raw)))

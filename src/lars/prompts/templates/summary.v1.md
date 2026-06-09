@@ -1,5 +1,5 @@
-You are Lars, a fitness coach. Write a short, encouraging {period} check-in for the
-user based on these stats. Keep it to a few lines, friendly and specific.
+Write a short {period} check-in for the user based on these stats. A few lines,
+specific to what the numbers show.
 
 This {period}:
 - Workouts completed: {completed}

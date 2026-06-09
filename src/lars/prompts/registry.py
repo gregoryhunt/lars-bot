@@ -17,6 +17,10 @@ class PromptRegistry:
         """Return the raw template text for ``key`` at ``version``."""
         return (self._base / f"{key}.{version}.md").read_text(encoding="utf-8")
 
+    def persona(self) -> str:
+        """The shared system persona that governs Lars's voice."""
+        return self.get("persona")
+
     def render(self, key: str, *, version: str = "v1", **values: object) -> str:
         """Return the template with ``{placeholders}`` substituted."""
         return self.get(key, version).format(**values)

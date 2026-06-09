@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed (persona & prompt cleanup)
+- Added a single shared **persona** prompt (`persona.v1.md`) that defines Lars's
+  voice; it's passed as the `system` prompt on the prose-generating model calls
+  (workout generation, summary, review) via `PromptRegistry.persona()`.
+- Removed the inconsistent per-template "You are Lars, a [strength/nutrition/fitness]
+  coach" preambles and trimmed duplicated tone instructions — each task prompt now
+  owns its task and output contract, while the persona owns the voice.
+- Playground applies the persona on `generate`/`review` (matching production) and
+  adds a `persona` command to print/iterate the voice.
+
 ### Added (prompt playground)
 - `scripts/playground.py`: a local CLI to run Lars's prompts (classify, generate,
   nutrition, onboarding, review, screenshot) against the real model with only an
