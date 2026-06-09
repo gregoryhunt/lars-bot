@@ -126,6 +126,24 @@ uv run lars
 Checks (works today): `uv run ruff check .`, `uv run ty check`, `uv run pytest`.
 Integration tests need the Postgres container running; they skip otherwise.
 
+### Prompt playground (local prompt testing)
+
+Exercise Lars's prompts against the real model with only an `ANTHROPIC_API_KEY`
+(no database or Telegram needed) — useful for iterating on the templates in
+`src/lars/prompts/templates/`:
+
+```bash
+uv run python scripts/playground.py classify "I weighed 181 this morning"
+uv run python scripts/playground.py generate --split pull --progression deload
+uv run python scripts/playground.py nutrition "chicken caesar wrap and a banana"
+uv run python scripts/playground.py onboarding
+uv run python scripts/playground.py review --scope block
+uv run python scripts/playground.py screenshot path/to/screenshot.png
+```
+
+Add `--show-prompt` to print the rendered prompt. Each command shows the model
+output and, for the JSON prompts, whether it parses into the expected model.
+
 ## Environment variables
 
 | Variable | Required | Description |

@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (prompt playground)
+- `scripts/playground.py`: a local CLI to run Lars's prompts (classify, generate,
+  nutrition, onboarding, review, screenshot) against the real model with only an
+  `ANTHROPIC_API_KEY` — no DB or Telegram. Shows the model output and validates the
+  JSON prompts against their Pydantic models; `--show-prompt` prints the rendered
+  prompt. For iterating on templates before manual Telegram smoke testing.
+
 ### Added (M14 — dynamic activity level)
 - `ActivityService` derives an effective activity level from completed workouts in
   the last week (bumped by reported untracked activity) and refreshes
