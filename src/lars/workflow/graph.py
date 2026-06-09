@@ -58,6 +58,7 @@ def build_graph(
     graph.add_node("pulse_check", nodes.pulse_check)
     graph.add_node("log_nutrition", nodes.log_nutrition)
     graph.add_node("summarize", nodes.summarize)
+    graph.add_node("converse", nodes.converse)
     graph.add_node("persist", nodes.persist)
     graph.add_node("respond", nodes.respond)
 
@@ -79,6 +80,7 @@ def build_graph(
             "confirm_write": "confirm_write",
             "log_nutrition": "log_nutrition",
             "summarize": "summarize",
+            "converse": "converse",
             "respond": "respond",
         },
     )
@@ -99,6 +101,7 @@ def build_graph(
     graph.add_edge("pulse_check", END)
     graph.add_edge("log_nutrition", END)
     graph.add_edge("summarize", END)
+    graph.add_edge("converse", END)
     graph.add_edge("persist", "respond")
     graph.add_edge("respond", END)
 

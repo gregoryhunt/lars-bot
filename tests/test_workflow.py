@@ -50,6 +50,16 @@ async def test_nutrition_intent_routes_to_logger() -> None:
     assert "logged" in result["response"].lower()
 
 
+async def test_help_intent_is_answered_by_the_model() -> None:
+    # classify -> "help"; then the converse node calls the model for the reply.
+    chat_reply = "I track workouts, weight, and nutrition — try sending a screenshot."
+    adapter = MockModelAdapter(["help", chat_reply])
+    graph = build_graph(adapter, PromptRegistry(), MemorySaver(), StubContextLoader())
+    result = await graph.ainvoke({"telegram_id": 1, "text": "what can you do?"}, cfg())
+    assert result["response"] == chat_reply
+    assert len(adapter.prompts) == 2  # classify + converse
+
+
 async def test_new_user_routed_to_onboarding() -> None:
     graph, adapter = make_graph("view_plan", is_new=True)
     reply = await run_turn(graph, cfg(), telegram_id=1, text="hey")

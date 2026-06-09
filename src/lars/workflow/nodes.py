@@ -80,13 +80,20 @@ _ONBOARDING_QUESTIONS: list[tuple[str, str]] = [
     ("units", "Last one — do you prefer imperial (lb) or metric (kg)?"),
 ]
 
+# Honest, deterministic placeholders for intents whose feature isn't built yet.
 _PLACEHOLDER_RESPONSES: dict[Intent, str] = {
-    Intent.VIEW_PLAN: "Here's where I'll show your plan. (coming soon)",
-    Intent.VIEW_TRENDS: "Here's where I'll show your trends. (coming soon)",
-    Intent.REQUEST_GENERATION: "I'll generate a workout for you here. (coming soon)",
-    Intent.HELP: "I track your workouts, weight, and nutrition — just talk to me normally.",
-    Intent.UNKNOWN: "I'm not sure I caught that — could you say it another way?",
+    Intent.VIEW_PLAN: (
+        "I don't have a plan view yet — but I send each workout the night before "
+        "your training day. A trends/plan view is on the way."
+    ),
+    Intent.REQUEST_GENERATION: (
+        "I generate your workout automatically the night before — on-demand "
+        "generation is coming soon."
+    ),
 }
+
+# Conversational intents Lars answers in his own voice (model-driven).
+_CONVERSE_INTENTS = frozenset({Intent.HELP, Intent.UNKNOWN})
 
 
 def _is_affirmative(value: object) -> bool:
@@ -240,13 +247,20 @@ class WorkflowNodes:
         # Placeholder write; real persistence lands in later milestones.
         return {"persisted": True}
 
+    async def converse(self, state: GraphState) -> GraphState:
+        reply = await self._adapter.generate(
+            self._registry.render("chat", message=state.get("text", "")),
+            system=self._registry.persona(),
+        )
+        return {"response": reply}
+
     async def respond(self, state: GraphState) -> GraphState:
         if state.get("persisted"):
-            return {"response": "Done ✅ (placeholder write — real persistence coming soon)."}
+            return {"response": "Got it — that's noted. (I'm still wiring up full support here.)"}
         if state.get("confirmed") is False:
             return {"response": "No problem — I won't make that change."}
         intent = Intent.parse(state.get("intent", Intent.UNKNOWN.value))
-        fallback = _PLACEHOLDER_RESPONSES[Intent.UNKNOWN]
+        fallback = "I'm not sure I caught that — mind saying it another way?"
         return {"response": _PLACEHOLDER_RESPONSES.get(intent, fallback)}
 
 
@@ -277,6 +291,8 @@ def route_after_classify(state: GraphState) -> str:
         return "log_nutrition"
     if intent == Intent.VIEW_TRENDS:
         return "summarize"
+    if intent in _CONVERSE_INTENTS:
+        return "converse"
     return "respond"
 
 

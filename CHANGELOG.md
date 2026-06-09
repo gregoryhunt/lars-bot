@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (conversational replies + voiced copy)
+- A model-driven `converse` node (new `chat` prompt + persona): the `help` and
+  unrecognized (`unknown`) intents are now answered by Lars in his own voice rather
+  than a canned line — the model is told not to claim actions it can't perform.
+- Hardcoded user-facing copy kept deterministic but voiced: honest, on-brand
+  placeholders for not-yet-built features (plan view, on-demand generation) and a
+  truthful acknowledgement for unfinished text-write paths.
+- Balance of approaches: transactional copy (confirmations, acks, pulse questions,
+  nudges) stays fixed/fast; open-ended replies go through the model.
+
 ### Changed (persona & prompt cleanup)
 - Added a single shared **persona** prompt (`persona.v1.md`) that defines Lars's
   voice; it's passed as the `system` prompt on the prose-generating model calls
