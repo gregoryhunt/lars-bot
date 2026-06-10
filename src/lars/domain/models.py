@@ -5,7 +5,7 @@ This module holds the structured payloads that need their own schema — current
 the workout prescription that is persisted as ``generated_workouts.prescription``.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -44,6 +44,28 @@ class ScreenshotExtraction(BaseModel):
     protein_g: float | None = None
     carbs_g: float | None = None
     fat_g: float | None = None
+
+
+class WriteAction(BaseModel):
+    """A parsed text-write request, confirmed before it's persisted."""
+
+    kind: Literal["weight", "workout", "schedule", "skip", "unknown"] = "unknown"
+    summary: str = ""
+
+    # weight
+    weight_kg: float | None = None
+    body_fat_pct: float | None = None
+
+    # workout
+    workout_type: str | None = None
+    duration_min: float | None = None
+    performed_on: date | None = None
+
+    # schedule (full new weekday -> split map)
+    schedule: dict[str, str] | None = None
+
+    # skip
+    skip_date: date | None = None
 
 
 class NutritionItem(BaseModel):

@@ -12,7 +12,9 @@ from lars.workflow.nodes import (
     route_after_classify,
     route_after_confirm,
     route_after_context,
+    route_after_parse_write,
     route_after_persist_screenshot,
+    route_after_persist_write,
     route_after_screenshot_confirm,
 )
 from lars.workflow.nutrition import NutritionLogger
@@ -21,6 +23,7 @@ from lars.workflow.pulse import PulsePersister
 from lars.workflow.screenshots import ScreenshotPersister
 from lars.workflow.state import GraphState
 from lars.workflow.summary import SummaryProvider
+from lars.workflow.writes import WriteProvider
 
 
 def build_graph(
@@ -34,6 +37,7 @@ def build_graph(
     pulse_persister: PulsePersister | None = None,
     nutrition_logger: NutritionLogger | None = None,
     summary_provider: SummaryProvider | None = None,
+    write_provider: WriteProvider | None = None,
 ) -> Any:
     """Build and compile the workflow graph with the given dependencies."""
     nodes = WorkflowNodes(
@@ -45,6 +49,7 @@ def build_graph(
         pulse_persister,
         nutrition_logger,
         summary_provider,
+        write_provider,
     )
 
     graph = StateGraph(GraphState)  # ty: ignore[invalid-argument-type]  # TypedDict bound not recognized
@@ -52,14 +57,15 @@ def build_graph(
     graph.add_node("load_context", nodes.load_context)
     graph.add_node("onboarding", nodes.onboarding)
     graph.add_node("classify", nodes.classify)
+    graph.add_node("parse_write", nodes.parse_write)
     graph.add_node("confirm_write", nodes.confirm_write)
+    graph.add_node("persist_write", nodes.persist_write)
     graph.add_node("confirm_screenshot", nodes.confirm_screenshot)
     graph.add_node("persist_screenshot", nodes.persist_screenshot)
     graph.add_node("pulse_check", nodes.pulse_check)
     graph.add_node("log_nutrition", nodes.log_nutrition)
     graph.add_node("summarize", nodes.summarize)
     graph.add_node("converse", nodes.converse)
-    graph.add_node("persist", nodes.persist)
     graph.add_node("respond", nodes.respond)
 
     graph.add_edge(START, "intake")
@@ -77,7 +83,7 @@ def build_graph(
         "classify",
         route_after_classify,
         {
-            "confirm_write": "confirm_write",
+            "parse_write": "parse_write",
             "log_nutrition": "log_nutrition",
             "summarize": "summarize",
             "converse": "converse",
@@ -85,7 +91,15 @@ def build_graph(
         },
     )
     graph.add_conditional_edges(
-        "confirm_write", route_after_confirm, {"persist": "persist", "respond": "respond"}
+        "parse_write", route_after_parse_write, {"confirm_write": "confirm_write", "end": END}
+    )
+    graph.add_conditional_edges(
+        "confirm_write",
+        route_after_confirm,
+        {"persist_write": "persist_write", "respond": "respond"},
+    )
+    graph.add_conditional_edges(
+        "persist_write", route_after_persist_write, {"pulse_check": "pulse_check", "end": END}
     )
     graph.add_conditional_edges(
         "confirm_screenshot",
@@ -102,7 +116,6 @@ def build_graph(
     graph.add_edge("log_nutrition", END)
     graph.add_edge("summarize", END)
     graph.add_edge("converse", END)
-    graph.add_edge("persist", "respond")
     graph.add_edge("respond", END)
 
     return graph.compile(checkpointer=checkpointer)

@@ -11,6 +11,7 @@ class GraphState(TypedDict, total=False):
     # Derived during the run
     text: str
     screenshot: dict | None  # parsed ScreenshotExtraction, when this turn is a photo
+    pending_write: dict | None  # parsed WriteAction awaiting confirmation
     completion_id: str | None  # workout completion id, for the pulse check
     is_new_user: bool
     intent: str

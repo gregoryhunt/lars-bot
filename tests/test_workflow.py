@@ -11,6 +11,17 @@ from lars.workflow import build_graph, run_turn
 from lars.workflow.context import StubContextLoader
 
 
+class FakeWriteProvider:
+    def __init__(self, action: dict[str, Any] | None = None) -> None:
+        self.action = action or {"kind": "weight", "summary": "Log bodyweight 82 kg"}
+
+    async def parse(self, telegram_id: int, intent: str, text: str) -> dict[str, Any] | None:
+        return dict(self.action)
+
+    async def persist(self, telegram_id: int, action: dict[str, Any]) -> tuple[str, str | None]:
+        return "Saved ✅ done", None
+
+
 def make_graph(
     intent_label: str = "unknown", *, is_new: bool = False
 ) -> tuple[Any, MockModelAdapter]:
@@ -67,18 +78,29 @@ async def test_new_user_routed_to_onboarding() -> None:
     assert adapter.prompts == []  # classify never ran
 
 
+def make_write_graph(intent_label: str, action: dict[str, Any] | None = None) -> Any:
+    return build_graph(
+        MockModelAdapter([intent_label]),
+        PromptRegistry(),
+        MemorySaver(),
+        StubContextLoader(),
+        write_provider=FakeWriteProvider(action),
+    )
+
+
 async def test_important_write_blocks_until_confirmation() -> None:
-    graph, _ = make_graph("log_weight")
+    graph = make_write_graph("log_weight")
     first = await graph.ainvoke({"telegram_id": 1, "text": "weighed 181"}, cfg("w1"))
     assert "__interrupt__" in first
     assert not first.get("persisted")
 
     resumed = await graph.ainvoke(Command(resume="yes"), cfg("w1"))
     assert resumed["persisted"] is True
+    assert "saved" in resumed["response"].lower()
 
 
 async def test_rejected_write_is_not_persisted() -> None:
-    graph, _ = make_graph("change_schedule")
+    graph = make_write_graph("change_schedule", {"kind": "schedule", "summary": "Move legs to Sat"})
     await graph.ainvoke({"telegram_id": 1, "text": "move leg day to saturday"}, cfg("w2"))
     resumed = await graph.ainvoke(Command(resume="no"), cfg("w2"))
     assert resumed.get("persisted") is not True

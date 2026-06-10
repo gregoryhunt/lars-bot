@@ -25,6 +25,7 @@ from lars.workflow.pulse import PulsePersister
 from lars.workflow.screenshots import ScreenshotPersister
 from lars.workflow.state import GraphState
 from lars.workflow.summary import SummaryProvider
+from lars.workflow.writes import WriteProvider
 
 # Intents whose writes must be confirmed before persisting.
 CONFIRM_INTENTS = frozenset(
@@ -111,6 +112,7 @@ class WorkflowNodes:
         pulse_persister: PulsePersister | None = None,
         nutrition_logger: NutritionLogger | None = None,
         summary_provider: SummaryProvider | None = None,
+        write_provider: WriteProvider | None = None,
     ) -> None:
         self._adapter = adapter
         self._registry = registry
@@ -120,6 +122,7 @@ class WorkflowNodes:
         self._pulse_persister = pulse_persister
         self._nutrition_logger = nutrition_logger
         self._summary = summary_provider
+        self._writes = write_provider
 
     async def intake(self, state: GraphState) -> GraphState:
         # Read this turn's input from `incoming` (fresh turn) and reset transient
@@ -134,6 +137,7 @@ class WorkflowNodes:
         return {
             "text": text,
             "screenshot": screenshot,
+            "pending_write": None,
             "completion_id": None,
             "intent": "",
             "is_new_user": False,
@@ -176,10 +180,29 @@ class WorkflowNodes:
         raw = await self._adapter.generate(prompt)
         return {"intent": Intent.parse(raw).value}
 
+    async def parse_write(self, state: GraphState) -> GraphState:
+        if self._writes is None:
+            raise RuntimeError("text writes require a write_provider")
+        action = await self._writes.parse(
+            state["telegram_id"], state.get("intent", ""), state.get("text", "")
+        )
+        if not action:
+            return {"response": "I didn't quite catch that — could you say it another way?"}
+        return {"pending_write": action}
+
     async def confirm_write(self, state: GraphState) -> GraphState:
         # Pauses the graph until the user responds (resumed via Command(resume=...)).
-        decision = interrupt({"message": "Just to confirm — should I go ahead? (yes/no)"})
+        summary = (state.get("pending_write") or {}).get("summary") or "that change"
+        decision = interrupt({"message": f"{summary} — want me to go ahead? (yes/no)"})
         return {"confirmed": _is_affirmative(decision)}
+
+    async def persist_write(self, state: GraphState) -> GraphState:
+        if self._writes is None:
+            raise RuntimeError("text writes require a write_provider")
+        response, completion_id = await self._writes.persist(
+            state["telegram_id"], state.get("pending_write") or {}
+        )
+        return {"persisted": True, "completion_id": completion_id, "response": response}
 
     async def confirm_screenshot(self, state: GraphState) -> GraphState:
         shot = state.get("screenshot") or {}
@@ -243,10 +266,6 @@ class WorkflowNodes:
         text = await self._summary.summarize(state["telegram_id"], period_days)
         return {"response": text}
 
-    async def persist(self, state: GraphState) -> GraphState:
-        # Placeholder write; real persistence lands in later milestones.
-        return {"persisted": True}
-
     async def converse(self, state: GraphState) -> GraphState:
         reply = await self._adapter.generate(
             self._registry.render("chat", message=state.get("text", "")),
@@ -255,8 +274,6 @@ class WorkflowNodes:
         return {"response": reply}
 
     async def respond(self, state: GraphState) -> GraphState:
-        if state.get("persisted"):
-            return {"response": "Got it — that's noted. (I'm still wiring up full support here.)"}
         if state.get("confirmed") is False:
             return {"response": "No problem — I won't make that change."}
         intent = Intent.parse(state.get("intent", Intent.UNKNOWN.value))
@@ -286,7 +303,7 @@ def route_after_persist_screenshot(state: GraphState) -> str:
 def route_after_classify(state: GraphState) -> str:
     intent = Intent.parse(state.get("intent", Intent.UNKNOWN.value))
     if intent in CONFIRM_INTENTS:
-        return "confirm_write"
+        return "parse_write"
     if intent == Intent.LOG_NUTRITION:
         return "log_nutrition"
     if intent == Intent.VIEW_TRENDS:
@@ -296,5 +313,16 @@ def route_after_classify(state: GraphState) -> str:
     return "respond"
 
 
+def route_after_parse_write(state: GraphState) -> str:
+    return "confirm_write" if state.get("pending_write") else "end"
+
+
 def route_after_confirm(state: GraphState) -> str:
-    return "persist" if state.get("confirmed") else "respond"
+    return "persist_write" if state.get("confirmed") else "respond"
+
+
+def route_after_persist_write(state: GraphState) -> str:
+    pending = state.get("pending_write") or {}
+    if pending.get("kind") == "workout" and state.get("completion_id"):
+        return "pulse_check"
+    return "end"

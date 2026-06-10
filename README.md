@@ -19,7 +19,9 @@ night before a scheduled training day.
 > goal/program level-set) every ~4–6 weeks, scheduled adaptively — and answers
 > "how's my week/month?" on demand. Activity level is **dynamic**: Lars adapts it
 > from the week's logged workouts and a daily follow-up about untracked activity
-> (walks, yardwork), so calorie/TDEE targets track reality.
+> (walks, yardwork), so calorie/TDEE targets track reality. Beyond screenshots, you
+> can also just **tell** Lars in words — "weighed 181 today", "did legs, 45 min",
+> "move leg day to Saturday", "skipping today" — and he confirms, then saves it.
 
 ## What Lars does
 

@@ -39,6 +39,7 @@ from lars.services.onboarding import DbOnboardingPersister
 from lars.services.pulse import DbPulsePersister
 from lars.services.screenshots import DbScreenshotPersister, ScreenshotExtractor
 from lars.services.summary import SummaryService
+from lars.services.writes import WriteService
 from lars.telegram.handlers import (
     EXTRACTOR_KEY,
     GRAPH_KEY,
@@ -77,6 +78,7 @@ async def _post_init(app: Application) -> None:
     nutrition = NutritionService(sessionmaker, adapter, registry, off_client, clock)
     metrics_service = HealthMetricsService(sessionmaker)
     summary = SummaryService(sessionmaker, adapter, registry, metrics_service, clock)
+    writes = WriteService(sessionmaker, adapter, registry, clock)
     graph = build_graph(
         adapter,
         registry,
@@ -87,6 +89,7 @@ async def _post_init(app: Application) -> None:
         pulse_persister=DbPulsePersister(sessionmaker),
         nutrition_logger=nutrition,
         summary_provider=summary,
+        write_provider=writes,
     )
     app.bot_data[GRAPH_KEY] = graph
     app.bot_data[EXTRACTOR_KEY] = ScreenshotExtractor(adapter, registry)

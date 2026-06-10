@@ -5,6 +5,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (M15 — text-write intents persist for real)
+- The text-write intents now actually save (replacing the placeholder): logging
+  weight, logging a workout, changing the schedule, and reporting a skip.
+- `WriteService` parses the request with the model (`write_extraction` prompt → a
+  `WriteAction`) and, after confirmation, persists it — weight → body metric;
+  workout → completion reconciled to the planned session (then the pulse check);
+  schedule → a new active schedule (the old one deactivated); skip → the planned
+  session marked skipped.
+- Graph: classify → `parse_write` → `confirm_write` (echoes the parsed summary) →
+  `persist_write`; the placeholder `persist` node is gone.
+- Tests: each persistence path (integration) and the confirm/reject flow.
+
+### Note
+- Skip currently just marks the session skipped (the push-vs-drop reschedule is
+  deferred), and on-demand workout regeneration via chat is still deferred.
+
 ### Added (conversational replies + voiced copy)
 - A model-driven `converse` node (new `chat` prompt + persona): the `help` and
   unrecognized (`unknown`) intents are now answered by Lars in his own voice rather

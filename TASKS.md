@@ -123,3 +123,14 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
 - [x] Daily next-morning follow-up (`activity_check` job) asking about untracked
       activity (walk/yardwork) via inline buttons; recorded and fed into derivation.
 - [x] Tests: derivation mapping, refresh-from-workouts, and untracked bump.
+
+### M15 — Text-write intents (real persistence)
+- [x] `WriteService` parses a request (model) then persists after confirmation:
+      log weight, log workout, change schedule, report skip.
+- [x] Graph flow: classify → parse_write → confirm_write → persist_write
+      (workout chains to the pulse check; replaces the placeholder persist node).
+- [x] Weight → body metric; workout → completion (reconciled to the planned session);
+      schedule → new active schedule (old deactivated); skip → session marked skipped.
+- [x] Tests: each persistence path + the confirm/reject graph flow.
+- [ ] Skip push-vs-drop reschedule (mark-skipped only for now); on-demand workout
+      regeneration via conversation — both deferred.
