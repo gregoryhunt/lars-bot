@@ -22,6 +22,7 @@ from lars.workflow.onboarding import (
     parse_onboarding_json,
 )
 from lars.workflow.pulse import PulsePersister
+from lars.workflow.regeneration import WorkoutRegenerator
 from lars.workflow.screenshots import ScreenshotPersister
 from lars.workflow.state import GraphState
 from lars.workflow.summary import SummaryProvider
@@ -87,10 +88,6 @@ _PLACEHOLDER_RESPONSES: dict[Intent, str] = {
         "I don't have a plan view yet — but I send each workout the night before "
         "your training day. A trends/plan view is on the way."
     ),
-    Intent.REQUEST_GENERATION: (
-        "I generate your workout automatically the night before — on-demand "
-        "generation is coming soon."
-    ),
 }
 
 # Conversational intents Lars answers in his own voice (model-driven).
@@ -123,6 +120,7 @@ class WorkflowNodes:
         nutrition_logger: NutritionLogger | None = None,
         summary_provider: SummaryProvider | None = None,
         write_provider: WriteProvider | None = None,
+        regenerator: WorkoutRegenerator | None = None,
     ) -> None:
         self._adapter = adapter
         self._registry = registry
@@ -133,6 +131,7 @@ class WorkflowNodes:
         self._nutrition_logger = nutrition_logger
         self._summary = summary_provider
         self._writes = write_provider
+        self._regenerator = regenerator
 
     async def intake(self, state: GraphState) -> GraphState:
         # Read this turn's input from `incoming` (fresh turn) and reset transient
@@ -288,6 +287,12 @@ class WorkflowNodes:
         text = await self._summary.summarize(state["telegram_id"], period_days)
         return {"response": text}
 
+    async def request_generation(self, state: GraphState) -> GraphState:
+        if self._regenerator is None:
+            raise RuntimeError("on-demand generation requires a regenerator")
+        text = await self._regenerator.generate_next(state["telegram_id"])
+        return {"response": text}
+
     async def converse(self, state: GraphState) -> GraphState:
         reply = await self._adapter.generate(
             self._registry.render("chat", message=state.get("text", "")),
@@ -330,6 +335,8 @@ def route_after_classify(state: GraphState) -> str:
         return "log_nutrition"
     if intent == Intent.VIEW_TRENDS:
         return "summarize"
+    if intent == Intent.REQUEST_GENERATION:
+        return "request_generation"
     if intent in _CONVERSE_INTENTS:
         return "converse"
     return "respond"

@@ -37,6 +37,7 @@ from lars.services.metrics import HealthMetricsService
 from lars.services.nutrition import NutritionService
 from lars.services.onboarding import DbOnboardingPersister
 from lars.services.pulse import DbPulsePersister
+from lars.services.regeneration import RegenerationService
 from lars.services.screenshots import DbScreenshotPersister, ScreenshotExtractor
 from lars.services.summary import SummaryService
 from lars.services.writes import WriteService
@@ -79,6 +80,9 @@ async def _post_init(app: Application) -> None:
     metrics_service = HealthMetricsService(sessionmaker)
     summary = SummaryService(sessionmaker, adapter, registry, metrics_service, clock)
     writes = WriteService(sessionmaker, adapter, registry, clock)
+    scheduling = SchedulingService(sessionmaker, clock)
+    generator = WorkoutGenerator(sessionmaker, adapter, registry, clock, metrics_service)
+    regeneration = RegenerationService(sessionmaker, scheduling, generator, clock)
     graph = build_graph(
         adapter,
         registry,
@@ -90,16 +94,15 @@ async def _post_init(app: Application) -> None:
         nutrition_logger=nutrition,
         summary_provider=summary,
         write_provider=writes,
+        regenerator=regeneration,
     )
     app.bot_data[GRAPH_KEY] = graph
     app.bot_data[EXTRACTOR_KEY] = ScreenshotExtractor(adapter, registry)
     app.bot_data[SESSIONMAKER_KEY] = sessionmaker
-    app.bot_data[SCHEDULER_KEY] = SchedulingService(sessionmaker, clock)
+    app.bot_data[SCHEDULER_KEY] = scheduling
     app.bot_data[SUMMARY_KEY] = summary
     app.bot_data[ACTIVITY_KEY] = ActivityService(sessionmaker, clock)
-    app.bot_data[GENERATOR_KEY] = WorkoutGenerator(
-        sessionmaker, adapter, registry, clock, metrics_service
-    )
+    app.bot_data[GENERATOR_KEY] = generator
     app.bot_data[_SAVER_CM_KEY] = saver_cm
     app.bot_data[_ENGINE_KEY] = engine
     app.bot_data[_HTTP_KEY] = http_client

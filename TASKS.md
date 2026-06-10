@@ -134,4 +134,5 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
 - [x] Tests: each persistence path + the confirm/reject graph flow.
 - [x] Skip push-vs-drop: after a skip, Lars offers "push to next day" (re-plans the
       session for the next day, same split) or "just skip it"; tested.
-- [ ] On-demand workout regeneration via conversation — deferred.
+- [x] On-demand workout (re)generation via chat: `request_generation` finds (or
+      creates) the next session and regenerates it; tested.

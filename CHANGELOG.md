@@ -17,6 +17,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `persist_write`; the placeholder `persist` node is gone.
 - Tests: each persistence path (integration) and the confirm/reject flow.
 
+### Added (on-demand workout generation)
+- The `request_generation` intent now works: asking Lars to make/redo your workout
+  finds your next planned session (creating tomorrow's if it's a training day),
+  regenerates the prescription (`allow_regenerate`), and sends it.
+  `RegenerationService` composes the scheduler + generator; tested at the service
+  and graph level. (Free-text modifiers like "make it lighter" aren't threaded into
+  the generation prompt yet — that's a follow-up.)
+
 ### Added (skip push-vs-drop)
 - Reporting a skip now asks how to handle it via buttons — **Push to next day**
   (re-plans the session for the next day with the same split) or **Just skip it**

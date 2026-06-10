@@ -20,6 +20,7 @@ from lars.workflow.nodes import (
 from lars.workflow.nutrition import NutritionLogger
 from lars.workflow.onboarding import OnboardingPersister
 from lars.workflow.pulse import PulsePersister
+from lars.workflow.regeneration import WorkoutRegenerator
 from lars.workflow.screenshots import ScreenshotPersister
 from lars.workflow.state import GraphState
 from lars.workflow.summary import SummaryProvider
@@ -38,6 +39,7 @@ def build_graph(
     nutrition_logger: NutritionLogger | None = None,
     summary_provider: SummaryProvider | None = None,
     write_provider: WriteProvider | None = None,
+    regenerator: WorkoutRegenerator | None = None,
 ) -> Any:
     """Build and compile the workflow graph with the given dependencies."""
     nodes = WorkflowNodes(
@@ -50,6 +52,7 @@ def build_graph(
         nutrition_logger,
         summary_provider,
         write_provider,
+        regenerator,
     )
 
     graph = StateGraph(GraphState)  # ty: ignore[invalid-argument-type]  # TypedDict bound not recognized
@@ -66,6 +69,7 @@ def build_graph(
     graph.add_node("pulse_check", nodes.pulse_check)
     graph.add_node("log_nutrition", nodes.log_nutrition)
     graph.add_node("summarize", nodes.summarize)
+    graph.add_node("request_generation", nodes.request_generation)
     graph.add_node("converse", nodes.converse)
     graph.add_node("respond", nodes.respond)
 
@@ -87,6 +91,7 @@ def build_graph(
             "parse_write": "parse_write",
             "log_nutrition": "log_nutrition",
             "summarize": "summarize",
+            "request_generation": "request_generation",
             "converse": "converse",
             "respond": "respond",
         },
@@ -123,6 +128,7 @@ def build_graph(
     graph.add_edge("pulse_check", END)
     graph.add_edge("log_nutrition", END)
     graph.add_edge("summarize", END)
+    graph.add_edge("request_generation", END)
     graph.add_edge("converse", END)
     graph.add_edge("respond", END)
 
