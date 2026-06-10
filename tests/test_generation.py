@@ -98,6 +98,19 @@ async def test_generate_persists_valid_prescription(
     assert len(events) == 1  # audit event emitted
 
 
+async def test_user_request_is_passed_into_the_prompt(
+    sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    user_id = await _make_user(sessions, 7006)
+    planned_id = await _add_session(sessions, user_id, dt.date(2026, 6, 5), "pull")
+    adapter = MockModelAdapter([PRESCRIPTION_JSON])
+    generator = WorkoutGenerator(sessions, adapter, PromptRegistry(), SystemClock())
+
+    await generator.generate(planned_id, note="make it lighter and shorter")
+
+    assert "make it lighter and shorter" in adapter.prompts[0]
+
+
 async def test_progress_when_no_history(
     sessions: async_sessionmaker[AsyncSession],
 ) -> None:

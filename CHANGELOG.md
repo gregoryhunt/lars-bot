@@ -22,8 +22,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   finds your next planned session (creating tomorrow's if it's a training day),
   regenerates the prescription (`allow_regenerate`), and sends it.
   `RegenerationService` composes the scheduler + generator; tested at the service
-  and graph level. (Free-text modifiers like "make it lighter" aren't threaded into
-  the generation prompt yet — that's a follow-up.)
+  and graph level.
+- Free-text modifiers are honored: the user's request (e.g. "make it lighter and
+  shorter", "more arms") is threaded into the generation prompt as a `request`
+  field, applied where safe without overriding the deload directive.
 
 ### Added (skip push-vs-drop)
 - Reporting a skip now asks how to handle it via buttons — **Push to next day**

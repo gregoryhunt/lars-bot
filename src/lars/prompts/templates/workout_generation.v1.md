@@ -11,6 +11,7 @@ Goal: {goal}
 Health metrics: {metrics}
 Last session's workout (for reference): {last_workout}
 Recent feedback: {feedback}
+User's request for this session: {request}
 
 Produce a single JSON object with these keys:
 - split_label: the session split (string).
@@ -22,4 +23,6 @@ Produce a single JSON object with these keys:
 Rules:
 - Choose exercises appropriate to the split, equipment, and experience.
 - Honor the progression directive.
+- If the user made a request (not "none"), honor it where it's safe and sensible —
+  e.g. lighter, shorter, more of a body part — without ignoring the deload directive.
 - Output ONLY the JSON object. No markdown fences, no commentary.

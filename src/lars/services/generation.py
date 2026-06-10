@@ -81,7 +81,11 @@ class WorkoutGenerator:
         self._metrics = metrics_service
 
     async def generate(
-        self, planned_session_id: uuid.UUID, *, allow_regenerate: bool = False
+        self,
+        planned_session_id: uuid.UUID,
+        *,
+        allow_regenerate: bool = False,
+        note: str | None = None,
     ) -> GenerationResult | None:
         async with self._sessionmaker() as session:
             planned = await session.get(PlannedSession, planned_session_id)
@@ -108,7 +112,7 @@ class WorkoutGenerator:
             last = await self._last_comparable(session, planned)
             progression = await self._progression(session, last)
 
-            prescription = await self._call_model(session, planned, user, last, progression)
+            prescription = await self._call_model(session, planned, user, last, progression, note)
             # Deterministic split resolution: the split is owned by the schedule.
             prescription.split_label = planned.split_label
 
@@ -200,6 +204,7 @@ class WorkoutGenerator:
         user: User | None,
         last: PlannedSession | None,
         progression: str,
+        note: str | None = None,
     ) -> WorkoutPrescription:
         last_workout = "none"
         if last is not None:
@@ -244,6 +249,7 @@ class WorkoutGenerator:
             metrics=metrics_text,
             last_workout=last_workout,
             feedback=feedback,
+            request=note or "none",
         )
         raw = await self._adapter.generate(prompt, system=self._registry.persona())
         return WorkoutPrescription.model_validate(json.loads(_strip_fences(raw)))

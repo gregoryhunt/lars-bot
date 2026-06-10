@@ -290,7 +290,9 @@ class WorkflowNodes:
     async def request_generation(self, state: GraphState) -> GraphState:
         if self._regenerator is None:
             raise RuntimeError("on-demand generation requires a regenerator")
-        text = await self._regenerator.generate_next(state["telegram_id"])
+        text = await self._regenerator.generate_next(
+            state["telegram_id"], state.get("text") or None
+        )
         return {"response": text}
 
     async def converse(self, state: GraphState) -> GraphState:

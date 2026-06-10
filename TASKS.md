@@ -135,4 +135,5 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
 - [x] Skip push-vs-drop: after a skip, Lars offers "push to next day" (re-plans the
       session for the next day, same split) or "just skip it"; tested.
 - [x] On-demand workout (re)generation via chat: `request_generation` finds (or
-      creates) the next session and regenerates it; tested.
+      creates) the next session and regenerates it, honoring the user's free-text
+      request (e.g. "make it lighter") via a `request` field in the prompt; tested.

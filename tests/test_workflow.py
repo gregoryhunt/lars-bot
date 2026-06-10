@@ -75,7 +75,7 @@ async def test_help_intent_is_answered_by_the_model() -> None:
 
 async def test_request_generation_routes_to_regenerator() -> None:
     class FakeRegenerator:
-        async def generate_next(self, telegram_id: int) -> str:
+        async def generate_next(self, telegram_id: int, request: str | None = None) -> str:
             return "Here's tomorrow's pull day 💪"
 
     graph = build_graph(

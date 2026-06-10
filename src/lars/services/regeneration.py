@@ -28,7 +28,7 @@ class RegenerationService:
         self._generator = generator
         self._clock = clock
 
-    async def generate_next(self, telegram_id: int) -> str:
+    async def generate_next(self, telegram_id: int, request: str | None = None) -> str:
         async with self._sessionmaker() as session:
             user = await UserRepository(session).get_by_telegram_id(telegram_id)
             if user is None:
@@ -56,8 +56,9 @@ class RegenerationService:
         if planned_id is None:
             return "No training day coming up right now — enjoy the rest. Want to add one?"
 
-        # allow_regenerate so an existing prescription is replaced on request.
-        result = await self._generator.generate(planned_id, allow_regenerate=True)
+        # allow_regenerate so an existing prescription is replaced on request;
+        # the user's free-text request (e.g. "make it lighter") guides generation.
+        result = await self._generator.generate(planned_id, allow_regenerate=True, note=request)
         if result is None:
             return "I couldn't put that together just now — try again in a moment."
         return format_prescription(result.prescription)
