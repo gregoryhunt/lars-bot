@@ -1,7 +1,7 @@
 """Parse and persist natural-language write requests (weight, workout, schedule, skip)."""
 
 import json
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -169,14 +169,43 @@ class WriteService:
                 )
             )
         ).scalar_one_or_none()
-        if planned is not None:
-            planned.status = SessionStatus.SKIPPED
-            return f"Done — {action.summary}".rstrip(), None, "session_skipped"
-        return (
-            "Noted — I don't see a scheduled session then, but I'll remember.",
-            None,
-            "session_skipped",
+        if planned is None:
+            return (
+                "Noted — I don't see a scheduled session then, but I'll remember.",
+                None,
+                "session_skipped",
+            )
+
+        planned.status = SessionStatus.SKIPPED
+        if action.skip_mode == "push" and action.skip_date is not None:
+            response = await self._push_session(session, user, planned, action.skip_date)
+        else:
+            response = f"Done — {action.summary}".rstrip()
+        return response, None, "session_skipped"
+
+    async def _push_session(
+        self, session: AsyncSession, user: User, skipped: PlannedSession, skip_date: date
+    ) -> str:
+        next_day = skip_date + timedelta(days=1)
+        existing = (
+            await session.execute(
+                select(PlannedSession).where(
+                    PlannedSession.user_id == user.id, PlannedSession.scheduled_date == next_day
+                )
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
+            return f"Skipped — but you already have {next_day:%A} booked, so I left it as is."
+        session.add(
+            PlannedSession(
+                user_id=user.id,
+                scheduled_date=next_day,
+                split_label=skipped.split_label,
+                status=SessionStatus.PLANNED,
+                source_schedule_id=skipped.source_schedule_id,
+            )
         )
+        return f"Done — moved {skipped.split_label} to {next_day:%A}. 💪"
 
     async def _planned_id(
         self, session: AsyncSession, user: User, day: date

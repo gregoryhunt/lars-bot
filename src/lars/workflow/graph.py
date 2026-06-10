@@ -59,6 +59,7 @@ def build_graph(
     graph.add_node("classify", nodes.classify)
     graph.add_node("parse_write", nodes.parse_write)
     graph.add_node("confirm_write", nodes.confirm_write)
+    graph.add_node("confirm_skip", nodes.confirm_skip)
     graph.add_node("persist_write", nodes.persist_write)
     graph.add_node("confirm_screenshot", nodes.confirm_screenshot)
     graph.add_node("persist_screenshot", nodes.persist_screenshot)
@@ -91,10 +92,17 @@ def build_graph(
         },
     )
     graph.add_conditional_edges(
-        "parse_write", route_after_parse_write, {"confirm_write": "confirm_write", "end": END}
+        "parse_write",
+        route_after_parse_write,
+        {"confirm_write": "confirm_write", "confirm_skip": "confirm_skip", "end": END},
     )
     graph.add_conditional_edges(
         "confirm_write",
+        route_after_confirm,
+        {"persist_write": "persist_write", "respond": "respond"},
+    )
+    graph.add_conditional_edges(
+        "confirm_skip",
         route_after_confirm,
         {"persist_write": "persist_write", "respond": "respond"},
     )

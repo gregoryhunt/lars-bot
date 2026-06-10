@@ -17,9 +17,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `persist_write`; the placeholder `persist` node is gone.
 - Tests: each persistence path (integration) and the confirm/reject flow.
 
+### Added (skip push-vs-drop)
+- Reporting a skip now asks how to handle it via buttons — **Push to next day**
+  (re-plans the session for the next day with the same split) or **Just skip it**
+  (marks it skipped). A `confirm_skip` node handles the choice; `WriteService`
+  performs the push (creating the next-day planned session, unless that day is
+  already booked). Tested at the service and graph level.
+
 ### Note
-- Skip currently just marks the session skipped (the push-vs-drop reschedule is
-  deferred), and on-demand workout regeneration via chat is still deferred.
+- On-demand workout regeneration via chat is still deferred.
 
 ### Added (conversational replies + voiced copy)
 - A model-driven `converse` node (new `chat` prompt + persona): the `help` and

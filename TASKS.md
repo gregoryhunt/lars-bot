@@ -132,5 +132,6 @@ Keep tasks small; each should land as a vertical slice with tests + doc updates.
 - [x] Weight → body metric; workout → completion (reconciled to the planned session);
       schedule → new active schedule (old deactivated); skip → session marked skipped.
 - [x] Tests: each persistence path + the confirm/reject graph flow.
-- [ ] Skip push-vs-drop reschedule (mark-skipped only for now); on-demand workout
-      regeneration via conversation — both deferred.
+- [x] Skip push-vs-drop: after a skip, Lars offers "push to next day" (re-plans the
+      session for the next day, same split) or "just skip it"; tested.
+- [ ] On-demand workout regeneration via conversation — deferred.

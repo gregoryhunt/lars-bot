@@ -66,6 +66,7 @@ class WriteAction(BaseModel):
 
     # skip
     skip_date: date | None = None
+    skip_mode: Literal["push", "drop"] | None = None  # set when the user chooses
 
 
 class NutritionItem(BaseModel):

@@ -101,6 +101,16 @@ def _is_affirmative(value: object) -> bool:
     return str(value).strip().lower() in _AFFIRMATIVE
 
 
+def _skip_choice(value: object) -> tuple[str | None, bool]:
+    """Map a skip follow-up reply to (mode, confirmed)."""
+    text = str(value).strip().lower()
+    if any(word in text for word in ("push", "tomorrow", "next", "move")):
+        return "push", True
+    if any(word in text for word in ("never", "cancel", "nvm", "leave", "nope")):
+        return None, False
+    return "drop", True  # default: they engaged and didn't push or cancel
+
+
 class WorkflowNodes:
     def __init__(
         self,
@@ -195,6 +205,18 @@ class WorkflowNodes:
         summary = (state.get("pending_write") or {}).get("summary") or "that change"
         decision = interrupt({"message": f"{summary} — want me to go ahead? (yes/no)"})
         return {"confirmed": _is_affirmative(decision)}
+
+    async def confirm_skip(self, state: GraphState) -> GraphState:
+        pending = state.get("pending_write") or {}
+        summary = pending.get("summary") or "that session"
+        choice = interrupt(
+            {
+                "message": f"{summary}. Push it to your next day, or just skip it this week?",
+                "options": ["Push to next day", "Just skip it", "Never mind"],
+            }
+        )
+        mode, confirmed = _skip_choice(choice)
+        return {"pending_write": {**pending, "skip_mode": mode}, "confirmed": confirmed}
 
     async def persist_write(self, state: GraphState) -> GraphState:
         if self._writes is None:
@@ -314,7 +336,10 @@ def route_after_classify(state: GraphState) -> str:
 
 
 def route_after_parse_write(state: GraphState) -> str:
-    return "confirm_write" if state.get("pending_write") else "end"
+    pending = state.get("pending_write")
+    if not pending:
+        return "end"
+    return "confirm_skip" if pending.get("kind") == "skip" else "confirm_write"
 
 
 def route_after_confirm(state: GraphState) -> str:

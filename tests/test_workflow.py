@@ -14,11 +14,13 @@ from lars.workflow.context import StubContextLoader
 class FakeWriteProvider:
     def __init__(self, action: dict[str, Any] | None = None) -> None:
         self.action = action or {"kind": "weight", "summary": "Log bodyweight 82 kg"}
+        self.persisted: list[dict[str, Any]] = []
 
     async def parse(self, telegram_id: int, intent: str, text: str) -> dict[str, Any] | None:
         return dict(self.action)
 
     async def persist(self, telegram_id: int, action: dict[str, Any]) -> tuple[str, str | None]:
+        self.persisted.append(action)
         return "Saved ✅ done", None
 
 
@@ -105,3 +107,21 @@ async def test_rejected_write_is_not_persisted() -> None:
     resumed = await graph.ainvoke(Command(resume="no"), cfg("w2"))
     assert resumed.get("persisted") is not True
     assert "won't" in resumed["response"].lower()
+
+
+async def test_skip_offers_push_or_drop() -> None:
+    fake = FakeWriteProvider({"kind": "skip", "summary": "Skip Monday", "skip_date": "2026-06-09"})
+    graph = build_graph(
+        MockModelAdapter(["report_skip"]),
+        PromptRegistry(),
+        MemorySaver(),
+        StubContextLoader(),
+        write_provider=fake,
+    )
+    first = await graph.ainvoke({"telegram_id": 1, "text": "skipping monday"}, cfg("s1"))
+    assert "__interrupt__" in first
+    assert "Push to next day" in first["__interrupt__"][0].value["options"]
+
+    resumed = await graph.ainvoke(Command(resume="Push to next day"), cfg("s1"))
+    assert resumed["persisted"] is True
+    assert fake.persisted[-1]["skip_mode"] == "push"

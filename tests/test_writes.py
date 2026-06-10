@@ -167,3 +167,41 @@ async def test_persist_skip_marks_session(
             )
         ).scalar_one()
     assert planned.status is SessionStatus.SKIPPED
+
+
+@pytest.mark.integration
+async def test_persist_skip_push_moves_to_next_day(
+    sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    user_id = await _make_user(sessions, 9205)
+    async with sessions() as session:
+        session.add(
+            PlannedSession(
+                user_id=user_id,
+                scheduled_date=dt.date(2026, 6, 10),
+                split_label="pull",
+                status=SessionStatus.PLANNED,
+            )
+        )
+        await session.commit()
+
+    await _service(sessions).persist(
+        9205,
+        {"kind": "skip", "summary": "Skip today", "skip_date": "2026-06-10", "skip_mode": "push"},
+    )
+
+    async with sessions() as session:
+        rows = (
+            await session.execute(
+                select(PlannedSession)
+                .where(PlannedSession.user_id == user_id)
+                .order_by(PlannedSession.scheduled_date)
+            )
+        ).scalars().all()
+    assert len(rows) == 2
+    assert rows[0].scheduled_date == dt.date(2026, 6, 10)
+    assert rows[0].status is SessionStatus.SKIPPED
+    # The workout was pushed to the next day with the same split.
+    assert rows[1].scheduled_date == dt.date(2026, 6, 11)
+    assert rows[1].split_label == "pull"
+    assert rows[1].status is SessionStatus.PLANNED
